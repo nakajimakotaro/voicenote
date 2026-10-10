@@ -44,9 +44,11 @@ struct TranscribeView: View {
         }
         .navigationTitle("文字起こし")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingSettings) {
+        .sheet(isPresented: $showingSettings, onDismiss: { transcription.clearKeyStops() }) {
             SettingsView()
         }
+        // ホームの設定でキーを入れてから戻ってきた場合も、古い表示を残さない
+        .onAppear { transcription.clearKeyStops() }
     }
 
     private func estimateSection(_ summary: TranscribeSummary) -> some View {

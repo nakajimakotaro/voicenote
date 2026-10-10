@@ -141,6 +141,12 @@ final class TranscriptionService {
         }
     }
 
+    /// 設定画面から戻ったときに呼ぶ。キーが保存されていれば、キーが理由で止まった表示を消す
+    func clearKeyStops() {
+        guard let key = try? keychain.read(), !key.isEmpty else { return }
+        stops = stops.filter { $0.value != .missingKey && $0.value != .unauthorized }
+    }
+
     /// 止める。送信中のセグメントは未送信に戻る
     func stop() async {
         worker?.cancel()
