@@ -14,7 +14,14 @@ struct TranscribeView: View {
     init(recording: Recording) {
         self.recording = recording
         let id = recording.id
-        _segments = Query(filter: #Predicate<Segment> { $0.block?.recording?.id == id }, sort: \.startMs)
+        // `$0.block?.recording?.id` のように2段のオプショナルチェーンはSQLに変換できず落ちるので if let で辿る
+        _segments = Query(filter: #Predicate<Segment> { segment in
+            if let block = segment.block, let recording = block.recording {
+                return recording.id == id
+            } else {
+                return false
+            }
+        }, sort: \.startMs)
     }
 
     private var isRunning: Bool { transcription.runningId == recording.id }
