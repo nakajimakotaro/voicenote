@@ -1,0 +1,7 @@
+# XcodeGenで project.yml から生成する
+NanpaVoice.xcodeproj/
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+.DS_Store
