@@ -5,3 +5,6 @@ NanpaVoice.xcodeproj/
 DerivedData/
 xcuserdata/
 .DS_Store
+
+# APIキーなどの秘密情報
+.env

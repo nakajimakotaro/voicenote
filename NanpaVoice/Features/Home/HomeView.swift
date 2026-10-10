@@ -46,7 +46,12 @@ struct HomeView: View {
             .navigationTitle("録音")
             .navigationDestination(for: UUID.self) { id in
                 if let recording = recordings.first(where: { $0.id == id }) {
-                    AnalyzeView(recording: recording)
+                    // 解析が終わったら分割画面に切り替える
+                    if recording.analysisState == .done {
+                        BlocksView(recording: recording)
+                    } else {
+                        AnalyzeView(recording: recording)
+                    }
                 }
             }
             .toolbar {
@@ -153,6 +158,7 @@ struct HomeView: View {
 
 private struct RecordingRow: View {
     @Environment(AnalysisService.self) private var analysis
+    @Environment(TranscriptionService.self) private var transcription
     let recording: Recording
 
     var body: some View {
@@ -181,6 +187,7 @@ private struct RecordingRow: View {
             return "解析中 \(Int(Double(p.processedMs) / Double(p.durationMs) * 100))%"
         case .error: return "解析エラー"
         case .done:
+            if transcription.runningId == recording.id { return "文字起こし中" }
             let transcribed = recording.blocks.contains { block in
                 block.segments.contains { $0.state == .done }
             }
@@ -197,4 +204,5 @@ private struct RecordingRow: View {
     HomeView()
         .modelContainer(container)
         .environment(AnalysisService(context: container.mainContext))
+        .environment(TranscriptionService(container: container))
 }

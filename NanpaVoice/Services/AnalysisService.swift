@@ -2,7 +2,6 @@ import AudioIO
 import Foundation
 import Observation
 import SwiftData
-import UIKit
 
 /// 録音の解析を1本ずつ順に実行する。重い処理はAudioIOがメインスレッドの外で行い、
 /// ここは順番待ち、SwiftDataへの状態の書き込み、画面向けの進捗だけを受け持つ
@@ -134,6 +133,6 @@ final class AnalysisService {
 
     /// 解析中は画面を消さない（裏に回ると処理が止まるため）
     private func updateIdleTimer() {
-        UIApplication.shared.isIdleTimerDisabled = currentTask != nil
+        IdleTimer.set(.analysis, active: currentTask != nil)
     }
 }

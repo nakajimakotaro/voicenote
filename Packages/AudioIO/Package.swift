@@ -15,9 +15,21 @@ let package = Package(
     targets: [
         .target(
             name: "AudioIO",
-            dependencies: ["Domain"],
+            dependencies: ["Domain", "CLame"],
             // Tools/convert_silero_vad.py で作ったコンパイル済みモデル
             resources: [.copy("Resources/SileroVAD.mlmodelc")]
+        ),
+        // LAME 3.100 のエンコーダー（LGPL）。詳しくは Sources/CLame/README.md
+        .target(
+            name: "CLame",
+            exclude: ["COPYING", "README.md"],
+            cSettings: [
+                .define("HAVE_CONFIG_H"),
+                .headerSearchPath("."),
+                .headerSearchPath("libmp3lame"),
+                // 手を入れない外部のコードなので警告は出さない
+                .unsafeFlags(["-w"]),
+            ]
         ),
         .testTarget(
             name: "AudioIOTests",

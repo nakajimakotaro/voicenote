@@ -47,4 +47,5 @@ public struct AnalysisProgress: Sendable, Hashable {
 public enum AudioIOError: Error, Equatable {
     case noAudioTrack
     case unreadable(String)
+    case encoder(String)
 }

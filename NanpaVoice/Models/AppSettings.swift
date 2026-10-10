@@ -12,6 +12,8 @@ final class AppSettings {
 
     static let transcriptionModel = "gpt-transcribe"
     static let mp3KbpsOptions = [32, 64, 128]
+    /// 見積もりを円で出すときの換算レート（目安）
+    static let yenPerUsd = 150.0
 
     init(pricePerMinUsd: Double = 0.006, language: String = "ja",
          gapMs: Int = 30_000, minBlockMs: Int = 20_000, mp3Kbps: Int = 64) {

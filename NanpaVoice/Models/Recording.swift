@@ -21,6 +21,9 @@ final class Recording {
     var analysisProgressMs: Int
     /// 解析に失敗したときの理由（画面表示用）
     var analysisErrorMessage: String?
+    /// ブロック一覧で選んだ分割パラメータ。nilなら設定の初期値を使う
+    var blockGapMs: Int?
+    var blockMinMs: Int?
 
     @Relationship(deleteRule: .cascade, inverse: \Block.recording)
     var blocks: [Block] = []
