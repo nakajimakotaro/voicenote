@@ -49,6 +49,8 @@ targets:
         # Mac 版を App Store Connect に上げるときに必須
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        # 暗号は HTTPS だけなので輸出規制の対象外。アップロードのたびに聞かれないようにする
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: R5PQN893BB
