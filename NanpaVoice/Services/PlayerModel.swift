@@ -16,9 +16,7 @@ final class PlayerModel {
     var rate: Float = 1.0 {
         didSet { player?.rate = rate }
     }
-    /// オンなら、再生位置がカットに入った瞬間にカットの終わりへ飛ぶ
-    var skipCuts = true
-    /// 飛ばすカット（正規化済み）
+    /// 飛ばすカット（正規化済み）。再生位置がカットに入った瞬間にカットの終わりへ飛ぶ
     private(set) var cuts: [TimeRange] = []
 
     private var player: AVAudioPlayer?
@@ -105,13 +103,13 @@ final class PlayerModel {
     }
 
     private func activeCut(at ms: Int) -> TimeRange? {
-        skipCuts ? cut(containing: ms, in: cuts) : nil
+        cut(containing: ms, in: cuts)
     }
 
     /// 次に読む位置までの待ち時間。次のカットが近ければ、その手前で起きる
     private func tickInterval() -> Duration {
         let tickMs = 50
-        guard skipCuts, let next = cuts.first(where: { $0.startMs > positionMs }) else { return .milliseconds(tickMs) }
+        guard let next = cuts.first(where: { $0.startMs > positionMs }) else { return .milliseconds(tickMs) }
         let untilCut = Int(Double(next.startMs - positionMs) / Double(max(rate, 0.1)))
         return .milliseconds(min(tickMs, max(5, untilCut)))
     }

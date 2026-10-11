@@ -53,7 +53,8 @@ struct EditorView: View {
         .onChange(of: cuts) { player.setCuts($1) }
         .onDisappear { player.stop() }
         .sheet(item: $editingSegment) { segment in
-            SegmentTextSheet(segment: segment, onPlay: { play(segment.range) }) { text in
+            let hidden = visibility(of: segment.range, cuts: cuts) == .hidden
+            SegmentTextSheet(segment: segment, onPlay: hidden ? nil : { play(segment.range) }) { text in
                 model.record(service.setText(text, of: segment))
             }
         }
@@ -241,7 +242,7 @@ struct EditorView: View {
                     .foregroundStyle(.secondary)
             }
             HStack(spacing: 4) {
-                action("試聴", "play.circle") { play(range) }
+                action("試聴", "play.circle", disabled: fullyCut) { play(range) }
                 action("カット", "scissors", disabled: fullyCut) { addCut(range) }
                 action("カットを戻す", "arrow.uturn.backward.circle", disabled: !touchesCut) { removeCut(range) }
                 if let segment {
@@ -367,12 +368,6 @@ private struct EditorPlayerBar: View {
                 }
                 .pickerStyle(.menu)
                 Spacer()
-                Toggle(isOn: $player.skipCuts) {
-                    Label("カットを飛ばす", systemImage: "scissors")
-                }
-                .toggleStyle(.button)
-                .buttonStyle(.bordered)
-                .font(.subheadline)
             }
         }
     }
@@ -401,11 +396,12 @@ private struct EditorPlayerBar: View {
 private struct SegmentTextSheet: View {
     @Environment(\.dismiss) private var dismiss
     let segment: Segment
-    let onPlay: () -> Void
+    /// すべてカットされた行ではnil（再生してもカットを飛ばすので何も鳴らない）
+    let onPlay: (() -> Void)?
     let onSave: (String) -> Void
     @State private var text: String
 
-    init(segment: Segment, onPlay: @escaping () -> Void, onSave: @escaping (String) -> Void) {
+    init(segment: Segment, onPlay: (() -> Void)?, onSave: @escaping (String) -> Void) {
         self.segment = segment
         self.onPlay = onPlay
         self.onSave = onSave
@@ -424,7 +420,9 @@ private struct SegmentTextSheet: View {
                     }
                 }
                 Section {
-                    Button("この部分を再生", systemImage: "play.circle", action: onPlay)
+                    if let onPlay {
+                        Button("この部分を再生", systemImage: "play.circle", action: onPlay)
+                    }
                     if text != segment.text {
                         Button("文字起こし結果に戻す", systemImage: "arrow.uturn.backward") { text = segment.text }
                     }
