@@ -1,4 +1,4 @@
-# ナンパ音声 文字起こし・編集アプリ 仕様書
+# VoiceNote 文字起こし・編集アプリ 仕様書
 
 Oct 11, 2026 · @haru
 
@@ -161,4 +161,4 @@ v2の候補：話者分離（`gpt-4o-transcribe-diarize`）、ブロックへの
   - Mac（M系、Debugビルド）では、読み上げと雑音で作った5時間のm4aを38秒で解析し、メモリの最大は14MB。1時間のmp3書き出しは31秒・15MB（`LONG_AUDIO=… swift test --filter LongAudioTests`）。実機とバッテリーは未計測
 - [ ] 使っている録音アプリの出力形式の確認
 - [x] LAME（LGPL）とSilero VAD（MIT）のライセンス表記をアプリ内に入れる
-  - 設定 > ライセンスに本文を表示（`NanpaVoice/Resources/Licenses/`）
+  - 設定 > ライセンスに本文を表示（`VoiceNote/Resources/Licenses/`）

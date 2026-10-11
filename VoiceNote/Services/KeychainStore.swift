@@ -7,7 +7,7 @@ struct KeychainStore {
         case unexpectedStatus(OSStatus)
     }
 
-    var service = Bundle.main.bundleIdentifier ?? "NanpaVoice"
+    var service = Bundle.main.bundleIdentifier ?? "VoiceNote"
     var account = "openai-api-key"
 
     private var baseQuery: [String: Any] {

@@ -4,8 +4,8 @@
 set -euo pipefail
 
 DEVICE_NAME="${1:-iPhone 17}"
-SCHEME="NanpaVoice"
-BUNDLE_ID="jp.haru.NanpaVoice"
+SCHEME="VoiceNote"
+BUNDLE_ID="jp.haru.VoiceNote"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DERIVED_DATA="$ROOT/DerivedData"
 
@@ -35,7 +35,7 @@ xcrun simctl bootstatus "$UDID" -b >/dev/null
 open -a Simulator
 
 echo "==> ビルド"
-xcodebuild -project NanpaVoice.xcodeproj -scheme "$SCHEME" \
+xcodebuild -project VoiceNote.xcodeproj -scheme "$SCHEME" \
   -configuration Debug \
   -destination "id=$UDID" \
   -derivedDataPath "$DERIVED_DATA" \

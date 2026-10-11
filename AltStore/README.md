@@ -10,7 +10,7 @@ AltStore PAL は Apple 公認の代替アプリマーケットプレイス（日
 ## 最初に一度だけ
 
 1. Apple Developer の Web サイトで、最新の Apple Developer Program 使用許諾契約に同意する（日本・EU の代替配信の条件が含まれる）
-2. App Store Connect でアプリを作る（バンドル ID `jp.haru.NanpaVoice`）。アプリ名は App Store 全体で重複できない
+2. App Store Connect でアプリを作る（バンドル ID `jp.haru.VoiceNote`）。アプリ名は App Store 全体で重複できない
 3. App Store Connect → 右上の名前 → プロフィールを編集 で **Developer ID**（UUID。Team ID ではない）を確認し、AltStore に登録する
    ```sh
    Tools/altstore.py register --developer-id <Developer ID> --email <メールアドレス>

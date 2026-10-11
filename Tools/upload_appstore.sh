@@ -3,13 +3,13 @@
 # 事前に必要なこと
 #   - Xcode に Apple Developer Program のアカウントでログインしておく
 #   - チームに端末を1台以上登録しておく（アーカイブは開発用の署名で作るため。Tools/run_iphone.sh を一度動かせば登録される）
-#   - App Store Connect に jp.haru.NanpaVoice のアプリを作っておく
+#   - App Store Connect に jp.haru.VoiceNote のアプリを作っておく
 # ビルド番号はアップロードごとに変える必要があるので、日時から作る
 # 使い方: Tools/upload_appstore.sh [--no-upload]
 #   --no-upload  アップロードせず、ipa と AltStore 用の権限の書き出しまで行う
 set -euo pipefail
 
-SCHEME="NanpaVoice"
+SCHEME="VoiceNote"
 TEAM_ID="R5PQN893BB"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DERIVED_DATA="$ROOT/DerivedData"
@@ -28,7 +28,7 @@ xcodegen generate --quiet
 echo "==> アーカイブ（ビルド番号 $BUILD_NUMBER）"
 rm -rf "$OUT"
 mkdir -p "$OUT"
-xcodebuild -project NanpaVoice.xcodeproj -scheme "$SCHEME" \
+xcodebuild -project VoiceNote.xcodeproj -scheme "$SCHEME" \
   -configuration Release \
   -destination 'generic/platform=iOS' \
   -derivedDataPath "$DERIVED_DATA" \

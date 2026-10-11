@@ -6,7 +6,7 @@
 # 使い方: Tools/package_mac.sh  →  dist/文字起こし.zip
 set -euo pipefail
 
-SCHEME="NanpaVoice"
+SCHEME="VoiceNote"
 APP_NAME="文字起こし"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DERIVED_DATA="$ROOT/DerivedData"
@@ -18,7 +18,7 @@ echo "==> xcodegen generate"
 xcodegen generate --quiet
 
 echo "==> ビルド（Intel と Apple シリコンの両方）"
-xcodebuild -project NanpaVoice.xcodeproj -scheme "$SCHEME" \
+xcodebuild -project VoiceNote.xcodeproj -scheme "$SCHEME" \
   -configuration Release \
   -destination 'generic/platform=macOS,variant=Mac Catalyst' \
   -derivedDataPath "$DERIVED_DATA" \

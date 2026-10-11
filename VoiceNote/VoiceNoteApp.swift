@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 @main
-struct NanpaVoiceApp: App {
+struct VoiceNoteApp: App {
     let container: ModelContainer
     @State private var analysis: AnalysisService
     @State private var transcription: TranscriptionService

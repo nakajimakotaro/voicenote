@@ -4,7 +4,7 @@
 # 使い方: Tools/run_mac.sh
 set -euo pipefail
 
-SCHEME="NanpaVoice"
+SCHEME="VoiceNote"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DERIVED_DATA="$ROOT/DerivedData"
 
@@ -14,7 +14,7 @@ echo "==> xcodegen generate"
 xcodegen generate --quiet
 
 echo "==> ビルド"
-xcodebuild -project NanpaVoice.xcodeproj -scheme "$SCHEME" \
+xcodebuild -project VoiceNote.xcodeproj -scheme "$SCHEME" \
   -configuration Debug \
   -destination 'platform=macOS,variant=Mac Catalyst' \
   -derivedDataPath "$DERIVED_DATA" \
@@ -22,5 +22,5 @@ xcodebuild -project NanpaVoice.xcodeproj -scheme "$SCHEME" \
   -quiet build
 
 echo "==> 起動"
-osascript -e 'quit app id "jp.haru.NanpaVoice"' 2>/dev/null || true
+osascript -e 'quit app id "jp.haru.VoiceNote"' 2>/dev/null || true
 open "$DERIVED_DATA/Build/Products/Debug-maccatalyst/$SCHEME.app"

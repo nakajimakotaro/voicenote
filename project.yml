@@ -1,4 +1,4 @@
-name: NanpaVoice
+name: VoiceNote
 options:
   bundleIdPrefix: jp.haru
   deploymentTarget:
@@ -15,28 +15,28 @@ packages:
   AudioIO:
     path: Packages/AudioIO
 targets:
-  NanpaVoice:
+  VoiceNote:
     type: application
     platform: iOS
     sources:
-      - path: NanpaVoice
+      - path: VoiceNote
       - path: Shared
     dependencies:
       - package: Domain
       - package: AudioIO
       - target: ShareExtension
     entitlements:
-      path: NanpaVoice/NanpaVoice.entitlements
+      path: VoiceNote/VoiceNote.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.jp.haru.NanpaVoice
+          - group.jp.haru.VoiceNote
         # ここから下は Mac 版（サンドボックス）のためのもの。iOS では無視される
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
         com.apple.security.files.user-selected.read-only: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: jp.haru.NanpaVoice
+        PRODUCT_BUNDLE_IDENTIFIER: jp.haru.VoiceNote
         # Mac Catalyst は iPad のUIを元にするので iPad も対象に含める
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: YES
@@ -79,33 +79,33 @@ targets:
       path: ShareExtension/ShareExtension.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.jp.haru.NanpaVoice
+          - group.jp.haru.VoiceNote
         # Mac 版の拡張はサンドボックスが必須。iOS では無視される
         com.apple.security.app-sandbox: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: jp.haru.NanpaVoice.ShareExtension
+        PRODUCT_BUNDLE_IDENTIFIER: jp.haru.VoiceNote.ShareExtension
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: YES
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: R5PQN893BB
-  NanpaVoiceUITests:
+  VoiceNoteUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - path: NanpaVoiceUITests
+      - path: VoiceNoteUITests
     dependencies:
-      - target: NanpaVoice
+      - target: VoiceNote
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: jp.haru.NanpaVoiceUITests
+        PRODUCT_BUNDLE_IDENTIFIER: jp.haru.VoiceNoteUITests
         GENERATE_INFOPLIST_FILE: YES
-        TEST_TARGET_NAME: NanpaVoice
+        TEST_TARGET_NAME: VoiceNote
 schemes:
-  NanpaVoice:
+  VoiceNote:
     build:
       targets:
-        NanpaVoice: all
+        VoiceNote: all
     test:
       targets:
-        - NanpaVoiceUITests
+        - VoiceNoteUITests

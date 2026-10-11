@@ -4,12 +4,12 @@
   "iconURL": "https://github.com/nakajimakotaro/altstore/releases/download/source/icon.png",
   "nsfw": false,
   "featuredApps": [
-    "jp.haru.NanpaVoice"
+    "jp.haru.VoiceNote"
   ],
   "apps": [
     {
       "name": "文字起こし",
-      "bundleIdentifier": "jp.haru.NanpaVoice",
+      "bundleIdentifier": "jp.haru.VoiceNote",
       "marketplaceID": "REPLACE_ME",
       "developerName": "haru",
       "subtitle": "長時間の録音を会話ごとに分けて文字起こし",

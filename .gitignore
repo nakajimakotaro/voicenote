@@ -1,5 +1,5 @@
 # XcodeGenで project.yml から生成する
-NanpaVoice.xcodeproj/
+VoiceNote.xcodeproj/
 .build/
 .swiftpm/
 DerivedData/

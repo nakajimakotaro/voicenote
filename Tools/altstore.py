@@ -33,7 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "AltStore" / "source.json"
-ICON = ROOT / "NanpaVoice" / "Resources" / "Assets.xcassets" / "AppIcon.appiconset" / "AppIcon.png"
+ICON = ROOT / "VoiceNote" / "Resources" / "Assets.xcassets" / "AppIcon.appiconset" / "AppIcon.png"
 HOST_REPO = "nakajimakotaro/altstore"
 SOURCE_TAG = "source"
 API = "https://api.altstore.io"

@@ -7,8 +7,8 @@
 set -euo pipefail
 
 DEVICE_NAME="${1:-}"
-SCHEME="NanpaVoice"
-BUNDLE_ID="jp.haru.NanpaVoice"
+SCHEME="VoiceNote"
+BUNDLE_ID="jp.haru.VoiceNote"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DERIVED_DATA="$ROOT/DerivedData"
 
@@ -41,7 +41,7 @@ sys.exit(1)
 read -r DEVICE_ID DEVICE_UDID <<<"$DEVICE"
 
 echo "==> ビルド（$DEVICE_UDID）"
-xcodebuild -project NanpaVoice.xcodeproj -scheme "$SCHEME" \
+xcodebuild -project VoiceNote.xcodeproj -scheme "$SCHEME" \
   -configuration Release \
   -destination "id=$DEVICE_UDID" \
   -derivedDataPath "$DERIVED_DATA" \

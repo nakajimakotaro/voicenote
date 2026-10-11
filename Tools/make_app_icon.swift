@@ -1,5 +1,5 @@
 // アプリアイコン（1024×1024、透過なし）を書き出す
-// 使い方: swift Tools/make_app_icon.swift NanpaVoice/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+// 使い方: swift Tools/make_app_icon.swift VoiceNote/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 import CoreGraphics
 import Foundation
 import ImageIO
