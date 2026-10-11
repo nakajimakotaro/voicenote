@@ -61,8 +61,9 @@ def save_source(src):
 
 def api(method, path, body=None):
     data = json.dumps(body).encode() if body is not None else None
+    # Python 既定の User-Agent だと Cloudflare に 403（error code: 1010）で弾かれる
     req = urllib.request.Request(API + path, data=data, method=method,
-                                 headers={"Content-Type": "application/json"})
+                                 headers={"Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
             return resp.status, parse_json(resp.read())
