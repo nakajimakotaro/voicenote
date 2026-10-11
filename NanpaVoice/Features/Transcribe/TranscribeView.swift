@@ -130,13 +130,14 @@ struct TranscribeView: View {
 @MainActor
 struct TranscribeSummary {
     struct BlockRow: Identifiable {
-        let id: UUID
+        let block: Block
         let number: Int
-        let title: String
-        let range: TimeRange
         let segments: [Segment]
 
-        var displayTitle: String { title.isEmpty ? "ブロック \(number)" : title }
+        var id: UUID { block.id }
+        var range: TimeRange { block.range }
+
+        var displayTitle: String { block.title.isEmpty ? "ブロック \(number)" : block.title }
         var doneCount: Int { segments.filter { $0.state == .done }.count }
         var failedCount: Int { segments.filter { $0.state == .failed }.count }
         var isSending: Bool { segments.contains { $0.state == .sending } }
@@ -159,7 +160,7 @@ struct TranscribeSummary {
                     ? block.range.durationMs
                     : segs.filter { $0.state == .pending || $0.state == .sending }.map(\.range.durationMs).reduce(0, +)
             }
-            rows.append(BlockRow(id: block.id, number: i + 1, title: block.title, range: block.range, segments: segs))
+            rows.append(BlockRow(block: block, number: i + 1, segments: segs))
         }
         blocks = rows
         self.pendingMs = pendingMs
@@ -177,6 +178,11 @@ private struct BlockProgressRow: View {
 
     var body: some View {
         DisclosureGroup {
+            NavigationLink {
+                EditorView(block: row.block)
+            } label: {
+                Label("エディタで開く", systemImage: "waveform")
+            }
             ForEach(row.segments) { segment in
                 SegmentTextRow(segment: segment)
             }

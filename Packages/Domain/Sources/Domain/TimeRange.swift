@@ -27,6 +27,20 @@ public struct TimeRange: Hashable, Sendable, Codable {
     }
 }
 
+/// `ms` を含む区間の位置を二分探索で求める。`ranges` は開始時刻の順に並んだ、重ならない区間
+public func indexOfRange(containing ms: Int, in ranges: [TimeRange]) -> Int? {
+    var lo = 0, hi = ranges.count
+    while lo < hi {
+        let mid = (lo + hi) / 2
+        if ranges[mid].endMs <= ms {
+            lo = mid + 1
+        } else {
+            hi = mid
+        }
+    }
+    return lo < ranges.count && ranges[lo].contains(ms) ? lo : nil
+}
+
 public enum BlockStatus: String, Hashable, Sendable, Codable, CaseIterable {
     case candidate
     case selected

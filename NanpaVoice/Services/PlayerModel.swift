@@ -1,4 +1,5 @@
 import AVFoundation
+import Domain
 import Foundation
 import Observation
 
@@ -15,6 +16,10 @@ final class PlayerModel {
     var rate: Float = 1.0 {
         didSet { player?.rate = rate }
     }
+    /// オンなら、再生位置がカットに入った瞬間にカットの終わりへ飛ぶ
+    var skipCuts = true
+    /// 飛ばすカット（正規化済み）
+    private(set) var cuts: [TimeRange] = []
 
     private var player: AVAudioPlayer?
     private var url: URL?
@@ -30,11 +35,18 @@ final class PlayerModel {
         player = nil
     }
 
+    func setCuts(_ cuts: [TimeRange]) {
+        self.cuts = cuts
+    }
+
     /// `ms` から再生する。`until` を指定するとそこで止まる
     func play(from ms: Int, until: Int? = nil) {
         guard let player = preparedPlayer() else { return }
-        player.currentTime = Double(max(0, ms)) / 1000
-        positionMs = max(0, ms)
+        var start = max(0, ms)
+        if let cut = activeCut(at: start) { start = cut.endMs }
+        if let until, start >= until { return }
+        player.currentTime = Double(start) / 1000
+        positionMs = start
         stopAtMs = until
         player.rate = rate
         guard player.play() else {
@@ -92,14 +104,30 @@ final class PlayerModel {
         }
     }
 
+    private func activeCut(at ms: Int) -> TimeRange? {
+        skipCuts ? cut(containing: ms, in: cuts) : nil
+    }
+
+    /// 次に読む位置までの待ち時間。次のカットが近ければ、その手前で起きる
+    private func tickInterval() -> Duration {
+        let tickMs = 50
+        guard skipCuts, let next = cuts.first(where: { $0.startMs > positionMs }) else { return .milliseconds(tickMs) }
+        let untilCut = Int(Double(next.startMs - positionMs) / Double(max(rate, 0.1)))
+        return .milliseconds(min(tickMs, max(5, untilCut)))
+    }
+
     /// 再生中は画面の更新に合わせて位置を読む
     private func startTicker() {
         ticker?.cancel()
         ticker = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(50))
+                try? await Task.sleep(for: self?.tickInterval() ?? .milliseconds(50))
                 guard let self, let player = self.player else { return }
                 self.positionMs = Int(player.currentTime * 1000)
+                if let cut = self.activeCut(at: self.positionMs) {
+                    self.positionMs = cut.endMs
+                    player.currentTime = Double(cut.endMs) / 1000
+                }
                 if let stopAt = self.stopAtMs, self.positionMs >= stopAt {
                     self.pause()
                     self.seek(to: stopAt)

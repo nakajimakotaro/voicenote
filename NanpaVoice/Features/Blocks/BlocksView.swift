@@ -11,6 +11,7 @@ struct BlocksView: View {
     @State private var player = PlayerModel()
     @State private var confirmingReset = false
     @State private var adjusting: Block?
+    @State private var editing: Block?
 
     private var service: BlockService { BlockService(context: modelContext) }
 
@@ -48,6 +49,9 @@ struct BlocksView: View {
         }
         .sheet(item: $adjusting) { block in
             BlockAdjustSheet(block: block, player: player)
+        }
+        .navigationDestination(item: $editing) { block in
+            EditorView(block: block)
         }
     }
 
@@ -217,6 +221,7 @@ struct BlocksView: View {
                     player: player,
                     service: service,
                     onAdjust: { adjusting = block },
+                    onEdit: { editing = block },
                     onClose: { model.selectedId = nil }
                 )
                 Divider()
@@ -347,6 +352,7 @@ private struct BlockActionsView: View {
     let player: PlayerModel
     let service: BlockService
     let onAdjust: () -> Void
+    let onEdit: () -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -372,6 +378,7 @@ private struct BlockActionsView: View {
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
+                    action("編集", "waveform", action: onEdit)
                     action(block.status == .selected ? "対象から外す" : "対象にする",
                            block.status == .selected ? "checkmark.circle.fill" : "checkmark.circle") {
                         service.setStatus(block, block.status == .selected ? .candidate : .selected)
