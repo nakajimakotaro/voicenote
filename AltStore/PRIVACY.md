@@ -26,4 +26,4 @@
 
 ## お問い合わせ
 
-https://github.com/nakajimakotaro/altstore/issues
+https://github.com/nakajimakotaro/voicenote/issues

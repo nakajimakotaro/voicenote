@@ -2,18 +2,15 @@
 
 AltStore PAL は Apple 公認の代替アプリマーケットプレイス（日本・EU・ブラジル）。App Store の審査ではなく「公証（Notarization）」に通ったアプリを配れる。利用者は iOS 26.2 以上で、日本の App Store アカウントを使っている必要がある。
 
-公開用の GitHub リポジトリ `nakajimakotaro/altstore`（public）の Releases に、source.json、アイコン、ADP（公証済みの配布パッケージ）を置く。操作はすべて `Tools/altstore.py` で行う。
+このリポジトリ `nakajimakotaro/voicenote`（public）の Releases に、source.json、アイコン、ADP（公証済みの配布パッケージ）を置く。操作はすべて `Tools/altstore.py` で行う。
 
-- source の URL: `https://github.com/nakajimakotaro/altstore/releases/download/source/source.json`
-- 追加用リンク: `altstore-pal://source?url=https://github.com/nakajimakotaro/altstore/releases/download/source/source.json`
+- source の URL: `https://github.com/nakajimakotaro/voicenote/releases/download/source/source.json`
+- 追加用リンク: `altstore-pal://source?url=https://github.com/nakajimakotaro/voicenote/releases/download/source/source.json`
 
 ## 最初に一度だけ
 
 1. Apple Developer の Web サイトで、最新の Apple Developer Program 使用許諾契約に同意する（日本・EU の代替配信の条件が含まれる）
-2. `gh auth login` で GitHub にログインし、公開用リポジトリを作ってプライバシーポリシー（`AltStore/PRIVACY.md`）を置く
-   ```sh
-   Tools/altstore.py init-repo
-   ```
+2. `gh auth login` で GitHub にログインする
 3. App Store Connect でアプリを作る（プラットフォーム iOS、バンドル ID `jp.haru.VoiceNote`、主言語 日本語）。名前は App Store 全体で重複できないので、「文字起こし」が使えなければ「VoiceNote 文字起こし」などにする（ホーム画面の表示名とは別でよい）
 4. App Store Connect → アプリ → App 情報 の **Apple ID**（数字）を `source.json` の `marketplaceID` に入れ、`Tools/altstore.py validate` が通ることを確かめる
 5. App Store Connect → 右上の名前 → プロフィールを編集 で **Developer ID**（UUID。Team ID ではない）を確認し、AltStore に登録する
@@ -22,9 +19,9 @@ AltStore PAL は Apple 公認の代替アプリマーケットプレイス（日
    ```
 6. 返ってきた token を App Store Connect → ユーザとアクセス → 統合 → マーケットプレイス → ＋ に貼る。アプリを選び、通知を送る（自動で処理させる）を選ぶ
 7. App Store Connect でアプリの情報を埋める。足りないものは提出時に表示される
-   - プライバシーポリシー URL: `https://github.com/nakajimakotaro/altstore/blob/main/PRIVACY.md`
+   - プライバシーポリシー URL: `https://github.com/nakajimakotaro/voicenote/blob/main/AltStore/PRIVACY.md`
    - App のプライバシー: 音声は利用者自身の API キーで OpenAI に送るだけで、開発者は何も集めない。迷うなら「オーディオデータ／App の機能／ユーザに紐付けない／トラッキングなし」と申告しておくと安全
-   - 年齢制限の質問、カテゴリ、サポート URL（`https://github.com/nakajimakotaro/altstore/issues` でよい）、著作権
+   - 年齢制限の質問、カテゴリ、サポート URL（`https://github.com/nakajimakotaro/voicenote/issues` でよい）、著作権
    - スクリーンショット: iPhone 6.9 インチ（または 6.5 インチ）と iPad 13 インチ（iPad にも対応しているため）
 
 ## リリースのたび

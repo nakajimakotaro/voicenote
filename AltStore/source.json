@@ -1,7 +1,7 @@
 {
   "name": "haru のアプリ",
   "subtitle": "長時間の録音を文字起こしして編集するアプリ",
-  "iconURL": "https://github.com/nakajimakotaro/altstore/releases/download/source/icon.png",
+  "iconURL": "https://github.com/nakajimakotaro/voicenote/releases/download/source/icon.png",
   "nsfw": false,
   "featuredApps": [
     "jp.haru.VoiceNote"
@@ -14,7 +14,7 @@
       "developerName": "haru",
       "subtitle": "長時間の録音を会話ごとに分けて文字起こし",
       "localizedDescription": "別の録音アプリで撮った最大5時間ほどの音声を取り込み、会話ごとに自動で分割して文字起こしとカット編集をし、テキストと mp3 で書き出すアプリです。\n\n・録音アプリの「共有」またはファイル選択から取り込み（m4a / aac / mp3 / wav）\n・無音の長さで会話ごとのブロックに自動分割。区切りはスライダーですぐ調整\n・選んだブロックだけを OpenAI API で文字起こし。実行前に料金の目安を表示\n・波形と文字を見ながらカット、メモ、誤認識の修正\n・カット済みの txt と mp3 を共有シートで書き出し\n\nOpenAI の API キーはご自身のものを入力してください。音声は端末と OpenAI の外には送りません。",
-      "iconURL": "https://github.com/nakajimakotaro/altstore/releases/download/source/icon.png",
+      "iconURL": "https://github.com/nakajimakotaro/voicenote/releases/download/source/icon.png",
       "category": "utilities",
       "appPermissions": {
         "entitlements": [
