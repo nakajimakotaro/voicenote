@@ -1,7 +1,7 @@
 #!/bin/zsh
 # iPhone 実機向けに署名してビルドし、インストールして起動する
 # 事前に必要なこと
-#   - Xcode に Apple ID でログインしておく（端末の登録とプロファイル作成を自動で行う）
+#   - Xcode に Apple ID でログインしておく（端末の登録とプロファイル作成はビルド時に自動で行う）
 #   - iPhone を USB か同じ Wi-Fi でつなぎ、デベロッパモードをオンにしておく
 # 使い方: Tools/run_iphone.sh ["iPhone の名前"]
 set -euo pipefail
@@ -46,6 +46,7 @@ xcodebuild -project NanpaVoice.xcodeproj -scheme "$SCHEME" \
   -destination "id=$DEVICE_UDID" \
   -derivedDataPath "$DERIVED_DATA" \
   -allowProvisioningUpdates \
+  -allowProvisioningDeviceRegistration \
   -quiet build
 
 echo "==> インストール"
