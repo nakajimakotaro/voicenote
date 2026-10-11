@@ -22,7 +22,7 @@ AltStore PAL は Apple 公認の代替アプリマーケットプレイス（日
    - プライバシーポリシー URL: `https://github.com/nakajimakotaro/voicenote/blob/main/AltStore/PRIVACY.md`
    - App のプライバシー: 音声は利用者自身の API キーで OpenAI に送るだけで、開発者は何も集めない。迷うなら「オーディオデータ／App の機能／ユーザに紐付けない／トラッキングなし」と申告しておくと安全
    - 年齢制限の質問、カテゴリ、サポート URL（`https://github.com/nakajimakotaro/voicenote/issues` でよい）、著作権
-   - スクリーンショット: iPhone 6.9 インチ（または 6.5 インチ）と iPad 13 インチ（iPad にも対応しているため）
+   - スクリーンショット: iPhone 6.3 インチ（1206×2622。Dynamic Island 搭載 iPhone の中型ディスプレイの欄）と iPad 13 インチ（2064×2752。iPad にも対応しているため）
 
 ## リリースのたび
 
