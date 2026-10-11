@@ -7,6 +7,7 @@
 元になる source.json は AltStore/source.json で、このリポジトリで管理する。
 
 サブコマンド
+  init-repo    公開用リポジトリを作り、プライバシーポリシーを置く（最初に一度だけ）
   register     AltStore PAL に Developer ID を登録し、App Store Connect に入れるトークンをもらう
   permissions  アプリと拡張の entitlements と UsageDescription を source.json に書き出す
   validate     source.json に足りない項目がないか調べる
@@ -14,10 +15,11 @@
   publish      公証済みの ADP を取ってきて公開し、source.json に版を足して公開する
   federate     explore.alt.store で検索できるようにする（source.json に fediUsername が必要）
 
-標準ライブラリだけで動く。push-source と publish には gh（ログイン済み）が要る。
+標準ライブラリだけで動く。init-repo、push-source、publish には gh（ログイン済み）が要る。
 """
 
 import argparse
+import base64
 import json
 import plistlib
 import re
@@ -34,6 +36,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "AltStore" / "source.json"
 ICON = ROOT / "VoiceNote" / "Resources" / "Assets.xcassets" / "AppIcon.appiconset" / "AppIcon.png"
+PRIVACY = ROOT / "AltStore" / "PRIVACY.md"
 HOST_REPO = "nakajimakotaro/altstore"
 SOURCE_TAG = "source"
 API = "https://api.altstore.io"
@@ -214,6 +217,25 @@ def cmd_push_source(_args):
     push_source()
 
 
+def cmd_init_repo(_args):
+    exists = subprocess.run(["gh", "repo", "view", HOST_REPO], capture_output=True).returncode == 0
+    if not exists:
+        # Releases を作るにはコミットが1つ以上要るので README を付けて作る
+        gh("repo", "create", HOST_REPO, "--public", "--add-readme",
+           "--description", "AltStore PAL source")
+        print(f"作りました: https://github.com/{HOST_REPO}")
+    # 同じ内容でも上書きできるよう、今あるファイルの sha を渡す
+    current = subprocess.run(["gh", "api", f"repos/{HOST_REPO}/contents/PRIVACY.md", "--jq", ".sha"],
+                             capture_output=True, text=True)
+    body = {"message": "プライバシーポリシーを更新する",
+            "content": base64.b64encode(PRIVACY.read_bytes()).decode()}
+    if current.returncode == 0:
+        body["sha"] = current.stdout.strip()
+    subprocess.run(["gh", "api", "-X", "PUT", f"repos/{HOST_REPO}/contents/PRIVACY.md", "--input", "-"],
+                   input=json.dumps(body), text=True, check=True, capture_output=True)
+    print(f"プライバシーポリシー: https://github.com/{HOST_REPO}/blob/main/PRIVACY.md")
+
+
 # ---------------------------------------------------------------- ADP
 
 def fetch_adp(adp_id, workdir, timeout):
@@ -290,6 +312,9 @@ def cmd_publish(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("init-repo", help="公開用リポジトリを作り、プライバシーポリシーを置く")
+    p.set_defaults(func=cmd_init_repo)
 
     p = sub.add_parser("register", help="Developer ID を登録してトークンをもらう")
     p.add_argument("--developer-id", required=True,
