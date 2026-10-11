@@ -41,7 +41,7 @@ targets:
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: R5PQN893BB
   ShareExtension:
     type: app-extension
     platform: iOS
@@ -73,7 +73,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: jp.haru.NanpaVoice.ShareExtension
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: R5PQN893BB
   NanpaVoiceUITests:
     type: bundle.ui-testing
     platform: iOS

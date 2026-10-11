@@ -32,6 +32,27 @@ final class SettingsUITests: XCTestCase {
         XCTAssertTrue(app.secureTextFields["sk-..."].waitForExistence(timeout: 5))
     }
 
+    /// 組み込んだライブラリのライセンス本文を開ける
+    @MainActor
+    func testShowsLicenses() {
+        let app = XCUIApplication()
+        app.launch()
+        app.buttons["設定"].tap()
+
+        let licenses = app.buttons["ライセンス"]
+        for _ in 0..<5 where !licenses.isHittable { app.swipeUp() }
+        licenses.tap()
+
+        app.buttons["LAME, LGPL 2"].tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'GNU LIBRARY GENERAL PUBLIC LICENSE'"))
+            .firstMatch.waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+
+        app.buttons["Silero VAD, MIT"].tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Silero Team'"))
+            .firstMatch.waitForExistence(timeout: 5))
+    }
+
     @MainActor
     private func deleteKey(_ app: XCUIApplication) {
         app.buttons["APIキーを削除"].tap()

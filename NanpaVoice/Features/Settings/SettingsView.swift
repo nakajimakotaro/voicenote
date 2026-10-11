@@ -37,6 +37,14 @@ private struct SettingsForm: View {
     let model: SettingsViewModel
     @State private var confirmingDelete = false
 
+    /// "0.1.0 (1)"
+    private static var version: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(short) (\(build))"
+    }
+
     var body: some View {
         Form {
             apiKeySection
@@ -73,6 +81,11 @@ private struct SettingsForm: View {
                         Text("\(kbps)kbps").tag(kbps)
                     }
                 }
+            }
+
+            Section("このアプリについて") {
+                LabeledContent("バージョン", value: Self.version)
+                NavigationLink("ライセンス") { LicensesView() }
             }
         }
         .scrollDismissesKeyboard(.interactively)
