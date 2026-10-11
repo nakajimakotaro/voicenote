@@ -12,7 +12,7 @@ struct BlockItem: Identifiable, Hashable {
     let status: BlockStatus
     let title: String
     let manuallyEdited: Bool
-    /// 文字起こしを始めていて、範囲を変えられない
+    /// 文字起こしの実行中で、範囲を変えられない
     let locked: Bool
 
     var displayTitle: String { title.isEmpty ? "ブロック \(number)" : title }
@@ -122,8 +122,8 @@ final class BlocksViewModel {
         dropMissingSelection(recording)
     }
 
-    /// 表示するブロック。スライダー操作中は仮のブロック
-    func items(_ recording: Recording) -> [BlockItem] {
+    /// 表示するブロック。スライダー操作中は仮のブロック。`transcribing` ならすべて範囲を変えられない
+    func items(_ recording: Recording, transcribing: Bool) -> [BlockItem] {
         if let preview {
             return preview.enumerated().map { i, draft in
                 BlockItem(id: UUID(), number: i + 1, range: draft.range, status: draft.status, title: "",
@@ -132,7 +132,7 @@ final class BlocksViewModel {
         }
         return BlockService.sorted(recording).enumerated().map { i, block in
             BlockItem(id: block.id, number: i + 1, range: block.range, status: block.status, title: block.title,
-                      manuallyEdited: block.manuallyEdited, locked: !BlockService.canEditRange(block))
+                      manuallyEdited: block.manuallyEdited, locked: transcribing)
         }
     }
 

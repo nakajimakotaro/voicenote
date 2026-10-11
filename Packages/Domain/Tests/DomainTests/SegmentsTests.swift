@@ -92,6 +92,21 @@ struct BuildSegmentsTests {
     }
 }
 
+struct UncoveredRangesTests {
+    @Test func fullyCovered() {
+        #expect(uncoveredRanges(block: sec(0, 60), covered: [sec(0, 30), sec(30, 60)]).isEmpty)
+    }
+
+    @Test func gapsAtEdgesAndBetween() {
+        let gaps = uncoveredRanges(block: sec(0, 100), covered: [sec(40, 60), sec(10, 30)])
+        #expect(gaps == [sec(0, 10), sec(30, 40), sec(60, 100)])
+    }
+
+    @Test func noSegments() {
+        #expect(uncoveredRanges(block: sec(5, 20), covered: []) == [sec(5, 20)])
+    }
+}
+
 struct CostTests {
     @Test func perMinute() {
         #expect(abs(estimateUsd(totalMs: 5 * 3_600_000, pricePerMinUsd: 0.006) - 1.8) < 1e-9)

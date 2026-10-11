@@ -14,6 +14,7 @@ struct EditorView: View {
     @State private var player = PlayerModel()
     @State private var editingSegment: Segment?
     @State private var showingInfo = false
+    @State private var showingExport = false
 
     init(block: Block) {
         self.block = block
@@ -29,12 +30,6 @@ struct EditorView: View {
 
     private var service: EditorService { EditorService(context: modelContext) }
 
-    private var displayTitle: String {
-        guard block.title.isEmpty else { return block.title }
-        let number = block.recording.flatMap { BlockService.sorted($0).firstIndex { $0.id == block.id } }
-        return number.map { "ブロック \($0 + 1)" } ?? "ブロック"
-    }
-
     var body: some View {
         let cuts = normalizeCuts(block: block.range, cuts: cutModels.map(\.range))
         VStack(spacing: 0) {
@@ -42,7 +37,7 @@ struct EditorView: View {
             Divider()
             segmentList(cuts)
         }
-        .navigationTitle(displayTitle)
+        .navigationTitle(BlockService.displayTitle(block))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
         .safeAreaInset(edge: .bottom) { bottomPanel(cuts) }
@@ -60,6 +55,11 @@ struct EditorView: View {
         }
         .sheet(isPresented: $showingInfo) {
             BlockInfoSheet(block: block)
+        }
+        .sheet(isPresented: $showingExport) {
+            if let recording = block.recording {
+                ExportView(recording: recording, blockIds: [block.id])
+            }
         }
     }
 
@@ -79,6 +79,10 @@ struct EditorView: View {
             Button("やり直す", systemImage: "arrow.uturn.forward") { model.redo(service) }
                 .disabled(!model.history.canRedo)
             Button("タイトルとメモ", systemImage: "square.and.pencil") { showingInfo = true }
+            Button("書き出し", systemImage: "square.and.arrow.up") {
+                player.pause()
+                showingExport = true
+            }
         }
     }
 

@@ -60,7 +60,7 @@ struct TranscribeView: View {
                     .monospacedDigit()
             }
         } footer: {
-            Text("1分あたり\(Format.usd(summary.pricePerMinUsd))、1ドル\(Int(AppSettings.yenPerUsd))円で計算した目安です。文字起こしを始めたブロックは範囲を変えられなくなります")
+            Text("1分あたり\(Format.usd(summary.pricePerMinUsd))、1ドル\(Int(AppSettings.yenPerUsd))円で計算した目安です")
         }
     }
 
@@ -133,6 +133,8 @@ struct TranscribeSummary {
         let block: Block
         let number: Int
         let segments: [Segment]
+        /// セグメントで覆われていない長さ。範囲を変えたブロックは、空いた部分を次の実行で送る
+        let uncoveredMs: Int
 
         var id: UUID { block.id }
         var range: TimeRange { block.range }
@@ -144,7 +146,7 @@ struct TranscribeSummary {
     }
 
     let blocks: [BlockRow]
-    /// これから送る長さ。まだ分けていないブロックはブロック全体
+    /// これから送る長さ。未送信のセグメントと、セグメントで覆われていない部分（まだ分けていないブロックは全体）
     let pendingMs: Int
     let pricePerMinUsd: Double
 
@@ -155,12 +157,14 @@ struct TranscribeSummary {
         for (i, block) in BlockService.sorted(recording).enumerated() {
             let segs = byBlock[block.id] ?? []
             guard block.status == .selected || !segs.isEmpty else { continue }
+            let uncoveredMs = block.status == .selected
+                ? uncoveredRanges(block: block.range, covered: segs.map(\.range)).map(\.durationMs).reduce(0, +)
+                : 0
             if block.status == .selected {
-                pendingMs += segs.isEmpty
-                    ? block.range.durationMs
-                    : segs.filter { $0.state == .pending || $0.state == .sending }.map(\.range.durationMs).reduce(0, +)
+                pendingMs += uncoveredMs
+                    + segs.filter { $0.state == .pending || $0.state == .sending }.map(\.range.durationMs).reduce(0, +)
             }
-            rows.append(BlockRow(block: block, number: i + 1, segments: segs))
+            rows.append(BlockRow(block: block, number: i + 1, segments: segs, uncoveredMs: uncoveredMs))
         }
         blocks = rows
         self.pendingMs = pendingMs
@@ -216,6 +220,7 @@ private struct BlockProgressRow: View {
         guard !row.segments.isEmpty else { return "未実行" }
         var label = "\(row.doneCount)/\(row.segments.count)"
         if row.failedCount > 0 { label += "（失敗 \(row.failedCount)）" }
+        if row.uncoveredMs > 0 { label += "・未実行 \(Format.duration(ms: row.uncoveredMs))" }
         return label
     }
 }

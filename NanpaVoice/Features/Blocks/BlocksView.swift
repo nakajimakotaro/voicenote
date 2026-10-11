@@ -6,14 +6,16 @@ import SwiftUI
 /// 結合・分割・境界の調整・除外・文字起こし対象の選択を行う
 struct BlocksView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(TranscriptionService.self) private var transcription
     let recording: Recording
     @State private var model = BlocksViewModel()
     @State private var player = PlayerModel()
     @State private var confirmingReset = false
-    @State private var adjusting: Block?
     @State private var editing: Block?
+    @State private var exporting: ExportTarget?
 
-    private var service: BlockService { BlockService(context: modelContext) }
+    private var transcribing: Bool { transcription.runningId == recording.id }
+    private var service: BlockService { BlockService(context: modelContext, transcribing: transcribing) }
 
     private var selectedBlock: Block? {
         guard model.preview == nil, let id = model.selectedId else { return nil }
@@ -21,7 +23,7 @@ struct BlocksView: View {
     }
 
     var body: some View {
-        let items = model.items(recording)
+        let items = model.items(recording, transcribing: transcribing)
         Group {
             if let error = model.loadError {
                 ContentUnavailableView(error, systemImage: "exclamationmark.triangle")
@@ -47,11 +49,11 @@ struct BlocksView: View {
         } message: {
             Text("結合・分割・境界の調整・採用や除外の指定が元に戻ります。文字起こし済みのブロックは残ります")
         }
-        .sheet(item: $adjusting) { block in
-            BlockAdjustSheet(block: block, player: player)
-        }
         .navigationDestination(item: $editing) { block in
             EditorView(block: block)
+        }
+        .sheet(item: $exporting) { target in
+            ExportView(recording: recording, blockIds: target.blockIds)
         }
     }
 
@@ -81,6 +83,8 @@ struct BlocksView: View {
         }
         ToolbarItem(placement: .primaryAction) {
             Menu("その他", systemImage: "ellipsis.circle") {
+                Button("書き出し", systemImage: "square.and.arrow.up") { export(nil) }
+                Divider()
                 Picker("1行の長さ", selection: Binding(get: { model.rowMinutes }, set: { model.setRowMinutes($0) })) {
                     ForEach(BlocksViewModel.rowMinutesOptions, id: \.self) { Text("1行 \($0)分").tag($0) }
                 }
@@ -220,8 +224,8 @@ struct BlocksView: View {
                     next: neighbor(of: block, offset: 1),
                     player: player,
                     service: service,
-                    onAdjust: { adjusting = block },
                     onEdit: { editing = block },
+                    onExport: { export([block.id]) },
                     onClose: { model.selectedId = nil }
                 )
                 Divider()
@@ -236,12 +240,23 @@ struct BlocksView: View {
         .background(.bar)
     }
 
+    private func export(_ blockIds: Set<UUID>?) {
+        player.pause()
+        exporting = ExportTarget(blockIds: blockIds)
+    }
+
     private func neighbor(of block: Block, offset: Int) -> Block? {
         let blocks = BlockService.sorted(recording)
         guard let index = blocks.firstIndex(where: { $0.id == block.id }) else { return nil }
         let target = index + offset
         return blocks.indices.contains(target) ? blocks[target] : nil
     }
+}
+
+/// 書き出し画面に渡す、最初に選んでおくブロック。nilなら文字起こし済みのブロックすべて
+private struct ExportTarget: Identifiable {
+    let id = UUID()
+    let blockIds: Set<UUID>?
 }
 
 /// 分割パラメータG・Lのスライダーと、ブロックの集計
@@ -351,8 +366,8 @@ private struct BlockActionsView: View {
     let next: Block?
     let player: PlayerModel
     let service: BlockService
-    let onAdjust: () -> Void
     let onEdit: () -> Void
+    let onExport: () -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -372,13 +387,18 @@ private struct BlockActionsView: View {
                     .foregroundStyle(.secondary)
             }
             if item.locked {
-                Text("文字起こしを始めたブロックは範囲を変えられません")
+                Text("文字起こしの実行中は範囲を変えられません")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if !block.segments.isEmpty {
+                Text(BlockService.transcriptNote)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     action("編集", "waveform", action: onEdit)
+                    action("書き出し", "square.and.arrow.up", action: onExport)
                     action(block.status == .selected ? "対象から外す" : "対象にする",
                            block.status == .selected ? "checkmark.circle.fill" : "checkmark.circle") {
                         service.setStatus(block, block.status == .selected ? .candidate : .selected)
@@ -399,19 +419,17 @@ private struct BlockActionsView: View {
                     action("再生位置で分割", "scissors", disabled: !canSplit) {
                         service.split(block, at: player.positionMs)
                     }
-                    action("微調整", "slider.horizontal.3", action: onAdjust)
                 }
             }
         }
     }
 
     private func canMerge(_ other: Block?) -> Bool {
-        guard let other else { return false }
-        return !item.locked && BlockService.canEditRange(other)
+        other != nil && service.canEditRange
     }
 
     private var canSplit: Bool {
-        !item.locked && splitRange(block.range, at: player.positionMs, minLengthMs: BlockService.minLengthMs) != nil
+        service.canEditRange && splitRange(block.range, at: player.positionMs, minLengthMs: BlockService.minLengthMs) != nil
     }
 
     private func action(_ title: String, _ icon: String, disabled: Bool = false,
@@ -451,75 +469,3 @@ struct PlayerBar: View {
     }
 }
 
-/// ブロックのタイトルと境界の微調整
-private struct BlockAdjustSheet: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    @Bindable var block: Block
-    let player: PlayerModel
-
-    private var service: BlockService { BlockService(context: modelContext) }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("タイトル") {
-                    TextField("ブロックのタイトル", text: $block.title)
-                }
-                if BlockService.canEditRange(block) {
-                    edgeSection("開始", edge: .start, ms: block.startMs) {
-                        player.play(from: block.startMs, until: min(block.endMs, block.startMs + 5_000))
-                    }
-                    edgeSection("終了", edge: .end, ms: block.endMs) {
-                        player.play(from: max(block.startMs, block.endMs - 5_000), until: block.endMs)
-                    }
-                } else {
-                    Section {
-                        Text("文字起こしを始めたブロックは範囲を変えられません")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .navigationTitle("微調整")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完了") { dismiss() }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .onDisappear {
-            if block.modelContext != nil { service.save() }
-        }
-    }
-
-    /// 500 → "+0.5秒"、-5000 → "-5秒"
-    private static func stepLabel(_ deltaMs: Int) -> String {
-        let seconds = Double(deltaMs) / 1000
-        return (deltaMs > 0 ? "+" : "") + seconds.formatted(.number.precision(.fractionLength(0...1))) + "秒"
-    }
-
-    private func edgeSection(_ title: String, edge: BlockEdge, ms: Int, preview: @escaping () -> Void) -> some View {
-        Section(title) {
-            HStack {
-                Text(Format.duration(ms: ms) + String(format: ".%01d", ms % 1000 / 100))
-                    .font(.title3)
-                    .monospacedDigit()
-                Spacer()
-                Button("試聴", systemImage: "play.circle", action: preview)
-                    .labelStyle(.iconOnly)
-                    .font(.title2)
-            }
-            HStack {
-                ForEach([-5_000, -500, 500, 5_000], id: \.self) { delta in
-                    Button(Self.stepLabel(delta)) {
-                        service.moveEdge(block, edge, to: ms + delta)
-                    }
-                    .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity)
-                }
-            }
-        }
-    }
-}

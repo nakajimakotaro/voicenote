@@ -1,12 +1,13 @@
 import UIKit
 
-/// 画面の自動ロックを止める。解析と文字起こしのどちらかが動いている間は止めたままにする
+/// 画面の自動ロックを止める。解析、文字起こし、書き出しのどれかが動いている間は止めたままにする
 /// （裏に回ると処理が止まるため）
 @MainActor
 enum IdleTimer {
     enum Reason: Hashable {
         case analysis
         case transcription
+        case export
     }
 
     private static var active: Set<Reason> = []

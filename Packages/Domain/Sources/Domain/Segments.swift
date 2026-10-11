@@ -33,6 +33,11 @@ public func buildSegments(block: TimeRange, regions: [TimeRange], maxMs: Int,
         .filter { !$0.isEmpty }
 }
 
+/// ブロックのうち、セグメントで覆われていない区間。範囲を変えたあと、次の文字起こしで埋める
+public func uncoveredRanges(block: TimeRange, covered: [TimeRange]) -> [TimeRange] {
+    subtract(mergedRegions(covered), from: block)
+}
+
 /// 重なりや接している区間をつなげ、時刻の順に並べる
 func mergedRegions(_ regions: [TimeRange]) -> [TimeRange] {
     var result: [TimeRange] = []

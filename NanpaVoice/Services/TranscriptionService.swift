@@ -49,22 +49,31 @@ final class TranscriptionService {
         await start(recording)
     }
 
-    /// 採用したブロックのうち、まだセグメントに分けていないものを分ける。分けたブロックは範囲を変えられなくなる
+    /// 採用したブロックのうち、セグメントで覆われていない部分を分ける。
+    /// まだ分けていないブロックは全体、範囲を変えたブロックは空いた部分だけが対象になる
     func prepareSegments(_ recording: Recording) async throws {
-        let targets = recording.blocks.filter { $0.status == .selected && $0.segments.isEmpty }
+        let targets = recording.blocks.compactMap { block -> (Block, [TimeRange])? in
+            guard block.status == .selected else { return nil }
+            let gaps = uncoveredRanges(block: block.range, covered: block.segments.map(\.range))
+            return gaps.isEmpty ? nil : (block, gaps)
+        }
         guard !targets.isEmpty else { return }
         let id = recording.id
-        let ranges = targets.map(\.range)
+        let gapLists = targets.map(\.1)
         let segmentRanges = try await Task.detached {
             let regions = try readRegions(from: FileLayout.regions(id))
             let peaks = try? PeakFile(url: FileLayout.peaks50(id))
-            return ranges.map { block in
-                buildSegments(block: block, regions: regions, maxMs: Self.segmentMaxMs,
-                              quietestPoint: peaks.map { p in { window in Self.quietestMs(in: window, peaks: p) } })
+            return gapLists.map { gaps in
+                gaps.flatMap { gap in
+                    buildSegments(block: gap, regions: regions, maxMs: Self.segmentMaxMs,
+                                  quietestPoint: peaks.map { p in { window in Self.quietestMs(in: window, peaks: p) } })
+                }
             }
         }.value
-        for (block, segments) in zip(targets, segmentRanges) where block.segments.isEmpty {
-            for range in segments {
+        for ((block, _), segments) in zip(targets, segmentRanges) {
+            // 待っているあいだに覆われた部分には作らない
+            let covered = block.segments.map(\.range)
+            for range in segments where !covered.contains(where: { $0.overlaps(range) }) {
                 let segment = Segment(startMs: range.startMs, endMs: range.endMs)
                 context.insert(segment)
                 segment.block = block

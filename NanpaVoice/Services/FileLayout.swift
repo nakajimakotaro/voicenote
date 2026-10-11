@@ -6,7 +6,8 @@ import Foundation
 ///     App Groupのコンテナ/Inbox/   Share Extensionが受け取ったファイル（AppGroup.inboxDir）
 ///     Application Support/recordings/{recordingId}/
 ///       source.{ext}  regions.jsonl  checkpoint.json  peaks_50.bin  peaks_1.bin
-///     tmp/            送信用・書き出し用の一時mp3
+///     tmp/            送信用の一時mp3
+///       export/       書き出したtxtとmp3（次の書き出しの前に消す）
 enum FileLayout {
     static var recordingsDir: URL {
         URL.applicationSupportDirectory.appendingPathComponent("recordings", isDirectory: true)
@@ -37,6 +38,9 @@ enum FileLayout {
         FileManager.default.temporaryDirectory.appendingPathComponent("work", isDirectory: true)
     }
 
+    /// 書き出したファイルを置く。共有シートが読み終わるまで残す
+    static var exportDir: URL { tmpDir.appendingPathComponent("export", isDirectory: true) }
+
     static func ensureDirectory(_ url: URL) throws {
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     }
@@ -49,9 +53,15 @@ enum FileLayout {
         }
     }
 
-    /// 一時フォルダを空にする（起動時と書き出し前に呼ぶ）
+    /// 一時フォルダを空にする（起動時に呼ぶ）
     static func cleanTmp() {
         try? FileManager.default.removeItem(at: tmpDir)
         try? ensureDirectory(tmpDir)
+    }
+
+    /// 前回の書き出しを消して空のフォルダを用意する。送信用の一時ファイルには触れない
+    static func resetExportDir() throws {
+        try? FileManager.default.removeItem(at: exportDir)
+        try ensureDirectory(exportDir)
     }
 }
