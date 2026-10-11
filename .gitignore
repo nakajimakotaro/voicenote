@@ -8,3 +8,6 @@ xcuserdata/
 
 # APIキーなどの秘密情報
 .env
+
+# Tools/package_mac.sh の出力
+dist/
