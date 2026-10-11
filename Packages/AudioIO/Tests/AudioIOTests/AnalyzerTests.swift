@@ -34,7 +34,7 @@ struct DecoderTests {
 
         let reader = try await PCMReader(url: url, sampleRate: 16_000)
         var samples: [Float] = []
-        while try reader.read(appendingTo: &samples) {}
+        while try await reader.read(appendingTo: &samples) {}
         #expect(abs(samples.count - 40_000) <= 16)
         // AVAssetReaderは等パワーで混ぜる（各チャンネル×1/√2の和）。両チャンネルが同じ0.3のサイン波なら約0.42
         let peak = samples.map(abs).max() ?? 0
@@ -44,7 +44,7 @@ struct DecoderTests {
     @Test func startsFromOffset() async throws {
         let reader = try await PCMReader(url: speechURL, sampleRate: 16_000, startMs: 12_000)
         var samples: [Float] = []
-        while try reader.read(appendingTo: &samples) {}
+        while try await reader.read(appendingTo: &samples) {}
         #expect(abs(samples.count - (17_820 - 12_000) * 16) <= 16 * 30)
     }
 }
@@ -54,7 +54,7 @@ struct SileroVADTests {
         let vad = try SileroVAD()
         let reader = try await PCMReader(url: speechURL, sampleRate: 16_000)
         var samples: [Float] = []
-        while try reader.read(appendingTo: &samples) {}
+        while try await reader.read(appendingTo: &samples) {}
 
         var probs: [(ms: Int, p: Float)] = []
         for start in stride(from: 0, to: samples.count, by: 512) {

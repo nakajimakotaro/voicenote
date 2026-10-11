@@ -46,7 +46,7 @@ struct Mp3Renderer {
             var more = true
             while more {
                 try Task.checkCancellation()
-                more = try reader.read(appendingTo: &pending)
+                more = try await reader.read(appendingTo: &pending)
                 if fade.position + pending.count > limit {
                     pending.removeLast(fade.position + pending.count - limit)
                     more = false

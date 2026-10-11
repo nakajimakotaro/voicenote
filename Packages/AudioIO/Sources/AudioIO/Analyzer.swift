@@ -111,7 +111,7 @@ struct Analyzer {
         var more = true
         while more {
             try Task.checkCancellation()
-            more = try reader.read(appendingTo: &pending)
+            more = try await reader.read(appendingTo: &pending)
             var offset = 0
             while pending.count - offset >= Self.unitSamples || (!more && offset < pending.count) {
                 let n = min(Self.unitSamples, pending.count - offset)

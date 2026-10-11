@@ -63,6 +63,24 @@ struct Mp3RendererTests {
         #expect(abs(result.durationMs - speechA.durationMs) <= 5)
     }
 
+    /// デコードの待ちでSwift Concurrencyのスレッドを塞ぐと、CPUコア数以上を同時に動かしたときに止まる。
+    /// 戻ってしまうとこのテストは終わらなくなる
+    @Test func manyConcurrentRendersFinish() async throws {
+        let count = ProcessInfo.processInfo.activeProcessorCount * 2
+        let outs = (0..<count).map { _ in tmpMp3() }
+        defer { outs.forEach { try? FileManager.default.removeItem(at: $0) } }
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for out in outs {
+                group.addTask {
+                    _ = try await renderMp3(input: speechURL, ranges: [speechA], output: out,
+                                            sampleRate: 16_000, kbps: 48, fadeMs: 20)
+                }
+            }
+            try await group.waitForAll()
+        }
+    }
+
     @Test func cancellingRemovesOutput() async throws {
         let out = tmpMp3()
         let task = Task {
