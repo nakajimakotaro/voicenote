@@ -35,7 +35,8 @@ targets:
         # ここから下は Mac 版（サンドボックス）のためのもの。iOS では無視される
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
-        com.apple.security.files.user-selected.read-only: true
+        # Mac Catalyst のファイル選択は読み書きの権限を発行しようとする。read-only だと拒否されて何も選べない
+        com.apple.security.files.user-selected.read-write: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: jp.haru.VoiceNote
