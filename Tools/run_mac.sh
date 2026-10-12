@@ -18,7 +18,7 @@ xcodebuild -project VoiceNote.xcodeproj -scheme "$SCHEME" \
   -configuration Debug \
   -destination 'platform=macOS,variant=Mac Catalyst' \
   -derivedDataPath "$DERIVED_DATA" \
-  -allowProvisioningUpdates \
+  -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
   -quiet build
 
 echo "==> 起動"
