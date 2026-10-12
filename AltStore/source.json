@@ -23,7 +23,25 @@
         ],
         "privacy": {}
       },
-      "versions": []
+      "versions": [
+        {
+          "version": "1.0",
+          "buildVersion": "202610112043",
+          "date": "2026-10-12T16:33:37Z",
+          "localizedDescription": "最初のリリース",
+          "downloadURL": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.0-202610112043/manifest.json",
+          "size": 1946609,
+          "minOSVersion": "17.0",
+          "assetURLs": {
+            "manifest": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.0-202610112043/manifest.json",
+            "signature": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.0-202610112043/signature",
+            "30e9e84d-42d6-3d43-a89b-2a58359b9d45": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.0-202610112043/30e9e84d-42d6-3d43-a89b-2a58359b9d45.ipa",
+            "4b774af5-0e2b-3288-afdd-da3c8d4f1bc7": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.0-202610112043/4b774af5-0e2b-3288-afdd-da3c8d4f1bc7.ipa",
+            "87767239-6f8c-370b-9a22-4aaa18488772": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.0-202610112043/87767239-6f8c-370b-9a22-4aaa18488772.ipa",
+            "deab5b38-e17c-3946-ae34-dbfdca1129d1": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.0-202610112043/deab5b38-e17c-3946-ae34-dbfdca1129d1.ipa"
+          }
+        }
+      ]
     }
   ],
   "news": []
