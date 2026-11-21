@@ -65,7 +65,7 @@ struct EditorView: View {
 
     private func load(_ cuts: [TimeRange]) async {
         guard let recording = block.recording else { return }
-        player.load(url: FileLayout.source(recording.id, fileName: recording.sourceFileName))
+        player.load(url: FileLayout.source(recording.id, fileName: recording.sourceFileName), title: recording.name)
         player.setCuts(cuts)
         if !block.range.contains(player.positionMs) { player.seek(to: block.startMs) }
         await model.loadPeaks(recordingId: recording.id)

@@ -27,6 +27,15 @@ targets:
       - package: Domain
       - package: AudioIO
       - target: ShareExtension
+    # 生成される Info.plist に足りないキーだけ書く。ほかは GENERATE_INFOPLIST_FILE の INFOPLIST_KEY_* で入る
+    info:
+      path: VoiceNote/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # 画面を消しても・ほかのアプリに切り替えても再生を続ける
+        UIBackgroundModes:
+          - audio
     entitlements:
       path: VoiceNote/VoiceNote.entitlements
       properties:

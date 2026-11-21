@@ -58,7 +58,7 @@ struct BlocksView: View {
     }
 
     private func load() async {
-        player.load(url: FileLayout.source(recording.id, fileName: recording.sourceFileName))
+        player.load(url: FileLayout.source(recording.id, fileName: recording.sourceFileName), title: recording.name)
         guard let regions = await model.load(recording) else { return }
         service.ensureBlocks(recording, regions: regions)
         let p = BlockService.params(recording, settings: AppSettings.current(in: modelContext))
