@@ -30,7 +30,7 @@ final class BlocksViewModel {
     }
 
     /// 1行の長さの選択肢（分）
-    static let rowMinutesOptions = [5, 10, 15, 30]
+    static let rowMinutesOptions = [5, 10, 15, 30, 60]
 
     var mode: Mode = .timeline
     private(set) var rowMs = 10 * 60_000

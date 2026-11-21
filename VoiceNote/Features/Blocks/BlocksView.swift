@@ -86,7 +86,7 @@ struct BlocksView: View {
                 Button("書き出し", systemImage: "square.and.arrow.up") { export(nil) }
                 Divider()
                 Picker("1行の長さ", selection: Binding(get: { model.rowMinutes }, set: { model.setRowMinutes($0) })) {
-                    ForEach(BlocksViewModel.rowMinutesOptions, id: \.self) { Text("1行 \($0)分").tag($0) }
+                    ForEach(BlocksViewModel.rowMinutesOptions, id: \.self) { Text($0 % 60 == 0 ? "1行 \($0 / 60)時間" : "1行 \($0)分").tag($0) }
                 }
                 Divider()
                 Button(role: .destructive) {
