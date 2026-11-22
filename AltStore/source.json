@@ -25,6 +25,29 @@
       },
       "versions": [
         {
+          "version": "1.1",
+          "buildVersion": "202611212253",
+          "date": "2026-11-22T23:16:28Z",
+          "localizedDescription": "・音声をバックグラウンドで再生できるようになりました\n・ブロック一覧の1行の長さに1時間を選べるようになりました",
+          "downloadURL": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/manifest.json",
+          "size": 1945916,
+          "minOSVersion": "17.0",
+          "assetURLs": {
+            "36fd7d6b-31c6-319c-aef9-9a2747e8ecfd": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/36fd7d6b-31c6-319c-aef9-9a2747e8ecfd.ipa",
+            "620e8eab-7b61-308f-80f9-8963bd49fa9b": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/620e8eab-7b61-308f-80f9-8963bd49fa9b.ipa",
+            "66dacbba-363c-3e90-b877-e1cce17682de": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/66dacbba-363c-3e90-b877-e1cce17682de.ipa",
+            "6b39bb33-c762-3723-a0fd-5cc174f245b0": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/6b39bb33-c762-3723-a0fd-5cc174f245b0.ipa",
+            "b6361fc2-0878-3321-958a-784369292ac5": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/b6361fc2-0878-3321-958a-784369292ac5.ipa",
+            "cfca40e2-cba9-392a-9cd3-bcd122e02a96": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/cfca40e2-cba9-392a-9cd3-bcd122e02a96.ipa",
+            "manifest": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/manifest.json",
+            "signature": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/signature",
+            "1c223370-6197-374e-8a93-07a3ac79aefc": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/1c223370-6197-374e-8a93-07a3ac79aefc.ipa",
+            "69e98fac-9f3d-39e0-8e2f-b80cf7a190c6": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/69e98fac-9f3d-39e0-8e2f-b80cf7a190c6.ipa",
+            "728b5709-d54c-3aed-834d-2ec85d25dc7d": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/728b5709-d54c-3aed-834d-2ec85d25dc7d.ipa",
+            "be1257c7-b14e-3e4f-b87b-eecb150e15cc": "https://github.com/nakajimakotaro/voicenote/releases/download/jp.haru.VoiceNote-1.1-202611212253/be1257c7-b14e-3e4f-b87b-eecb150e15cc.ipa"
+          }
+        },
+        {
           "version": "1.0",
           "buildVersion": "202610112043",
           "date": "2026-10-12T16:33:37Z",
