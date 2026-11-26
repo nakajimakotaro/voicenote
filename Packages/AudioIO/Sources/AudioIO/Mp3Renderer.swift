@@ -11,11 +11,13 @@ public struct Mp3Result: Sendable, Hashable {
 /// 区間ごとにデコードしてLAMEへ流すので、全体をメモリに持たない。
 /// 区間の両端に `fadeMs` のフェードをかけて、つなぎ目のプツッという音を防ぐ。
 /// 途中で失敗したりキャンセルされたりしたら `output` を消す
+/// - Parameter onProgress: 進捗通知（処理済みミリ秒, 合計ミリ秒）
 public func renderMp3(input: URL, ranges: [TimeRange], output: URL, sampleRate: Double,
-                      kbps: Int, fadeMs: Int) async throws -> Mp3Result {
+                      kbps: Int, fadeMs: Int,
+                      onProgress: (@Sendable (Int, Int) -> Void)? = nil) async throws -> Mp3Result {
     do {
         return try await Mp3Renderer(input: input, sampleRate: sampleRate, kbps: kbps, fadeMs: fadeMs)
-            .render(ranges: ranges, to: output)
+            .render(ranges: ranges, to: output, onProgress: onProgress)
     } catch {
         try? FileManager.default.removeItem(at: output)
         throw error
@@ -28,13 +30,17 @@ struct Mp3Renderer {
     let kbps: Int
     let fadeMs: Int
 
-    func render(ranges: [TimeRange], to output: URL) async throws -> Mp3Result {
+    func render(ranges: [TimeRange], to output: URL,
+                onProgress: (@Sendable (Int, Int) -> Void)? = nil) async throws -> Mp3Result {
         let encoder = try Mp3Encoder(sampleRate: sampleRate, kbps: kbps)
         FileManager.default.createFile(atPath: output.path, contents: nil)
         let file = try FileHandle(forWritingTo: output)
         defer { try? file.close() }
 
         let fadeSamples = fadeMs * Int(sampleRate) / 1000
+        let totalMs = ranges.filter { !$0.isEmpty }.map(\.durationMs).reduce(0, +)
+        var lastReportedMs = 0
+        if totalMs > 0 { onProgress?(0, totalMs) }
         var totalSamples = 0
         for range in ranges where !range.isEmpty {
             try Task.checkCancellation()
@@ -60,6 +66,13 @@ struct Mp3Renderer {
                 if !more { fade.applyOut(&chunk) }
                 try file.write(contentsOf: encoder.encode(chunk))
                 totalSamples += chunk.count
+                if let onProgress, totalMs > 0 {
+                    let processedMs = min(totalMs, Int(Double(totalSamples) / sampleRate * 1000))
+                    if processedMs - lastReportedMs >= 250 {
+                        lastReportedMs = processedMs
+                        onProgress(processedMs, totalMs)
+                    }
+                }
             }
         }
         try file.write(contentsOf: encoder.flush())
@@ -69,6 +82,7 @@ struct Mp3Renderer {
             try file.write(contentsOf: tag)
         }
         let bytes = try file.seekToEnd()
+        if totalMs > 0 { onProgress?(totalMs, totalMs) }
         return Mp3Result(durationMs: Int((Double(totalSamples) / sampleRate * 1000).rounded()), bytes: Int(bytes))
     }
 }

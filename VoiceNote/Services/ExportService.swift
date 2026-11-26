@@ -44,11 +44,42 @@ struct ExportService {
         let skippedMp3: [String]
     }
 
+    enum ClipError: LocalizedError {
+        case emptyRange
+
+        var errorDescription: String? {
+            switch self {
+            case .emptyRange: "選択した範囲はすべてカットされています"
+            }
+        }
+    }
+
     static let mp3SampleRate = 44_100.0
     /// つなぎ目のプツッという音を防ぐフェード
     static let fadeMs = 30
 
     let context: ModelContext
+
+    /// 選択範囲を切り抜いたmp3を一時フォルダ（tmp/work/export/）に作り、URLを返す。
+    /// 範囲内にカットがある場合は試聴と同じくカットを除いてつなぐ
+    func exportClip(recording: Recording, block: Block, range: TimeRange, cuts: [TimeRange], mp3Kbps: Int,
+                    onProgress: @escaping @MainActor @Sendable (Double) -> Void) async throws -> URL {
+        let ranges = keepRanges(block: range, cuts: cuts)
+        guard !ranges.isEmpty else { throw ClipError.emptyRange }
+        let source = FileLayout.source(recording.id, fileName: recording.sourceFileName)
+        try FileLayout.resetExportDir()
+        let name = clipExportName(blockTitle: BlockService.displayTitle(block), range: range, blockStartMs: block.startMs)
+        let fileName = exportFileName(recordedAt: recording.createdAt, name: name, ext: "mp3")
+        let output = FileLayout.exportDir.appendingPathComponent(fileName)
+        onProgress(0)
+        _ = try await renderMp3(input: source, ranges: ranges, output: output,
+                                sampleRate: Self.mp3SampleRate, kbps: mp3Kbps, fadeMs: Self.fadeMs) { doneMs, totalMs in
+            let fraction = totalMs > 0 ? min(1, Double(doneMs) / Double(totalMs)) : 1
+            Task { @MainActor in onProgress(fraction) }
+        }
+        onProgress(1)
+        return output
+    }
 
     /// - Parameter onProgress: mp3を1つ作り終えるごとに（作り終えた数, 全体の数）で呼ぶ
     func export(_ request: Request, onProgress: (Int, Int) -> Void) async throws -> Output {

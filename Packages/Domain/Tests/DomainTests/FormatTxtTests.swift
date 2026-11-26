@@ -133,3 +133,26 @@ struct ExportFileNameTests {
             == "20261011_" + String(repeating: "あ", count: 60) + ".txt")
     }
 }
+
+struct ClipExportNameTests {
+    @Test func appendsRelativeRangeToTitle() {
+        let name = clipExportName(blockTitle: "ブロック 1", range: sec(1_099, 2_075), blockStartMs: 0)
+        #expect(name == "ブロック 1_18m19s-34m35s")
+        #expect(exportFileName(recordedAt: recordedAt, name: name, ext: "mp3", timeZone: tokyo)
+            == "20261011_ブロック 1_18m19s-34m35s.mp3")
+    }
+
+    @Test func subtractsBlockStartAndFormatsHours() {
+        let name = clipExportName(blockTitle: "会話", range: sec(605, 4_325), blockStartMs: 600_000)
+        #expect(name == "会話_0m05s-1h02m05s")
+    }
+
+    @Test func handlesEmptyAndLongTitles() {
+        #expect(clipExportName(blockTitle: "  ", range: sec(10, 20), blockStartMs: 0) == "0m10s-0m20s")
+        let longTitle = String(repeating: "あ", count: 80)
+        let name = clipExportName(blockTitle: longTitle, range: sec(0, 3_725), blockStartMs: 0)
+        #expect(name == String(repeating: "あ", count: 40) + "_0m00s-1h02m05s")
+        #expect(exportFileName(recordedAt: recordedAt, name: name, ext: "mp3", timeZone: tokyo)
+            .hasSuffix("_0m00s-1h02m05s.mp3"))
+    }
+}

@@ -1,6 +1,7 @@
 import Domain
 import SwiftData
 import SwiftUI
+import UIKit
 
 /// エディタ（ブロック詳細）。上に波形、下にセグメントごとのテキストを並べ、再生と連動させる。
 /// カット、取り消し / やり直し、テキストの修正、タイトルとメモ、倍速を扱う
@@ -15,6 +16,16 @@ struct EditorView: View {
     @State private var editingSegment: Segment?
     @State private var showingInfo = false
     @State private var showingExport = false
+    @State private var clipPhase: ClipPhase = .idle
+    @State private var clipTask: Task<Void, Never>?
+    @State private var clipJobId: UUID?
+    @State private var shareFiles: [URL]?
+
+    private enum ClipPhase {
+        case idle
+        case working(Double)
+        case failed(String)
+    }
 
     init(block: Block) {
         self.block = block
@@ -46,7 +57,13 @@ struct EditorView: View {
         }
         .task { await load(cuts) }
         .onChange(of: cuts) { player.setCuts($1) }
-        .onDisappear { player.stop() }
+        .onChange(of: model.selection) {
+            if case .failed = clipPhase { clipPhase = .idle }
+        }
+        .onDisappear {
+            player.stop()
+            cancelClipShare()
+        }
         .sheet(item: $editingSegment) { segment in
             let hidden = visibility(of: segment.range, cuts: cuts) == .hidden
             SegmentTextSheet(segment: segment, onPlay: hidden ? nil : { play(segment.range) }) { text in
@@ -81,6 +98,7 @@ struct EditorView: View {
             Button("タイトルとメモ", systemImage: "square.and.pencil") { showingInfo = true }
             Button("書き出し", systemImage: "square.and.arrow.up") {
                 player.pause()
+                cancelClipShare()
                 showingExport = true
             }
         }
@@ -220,11 +238,34 @@ struct EditorView: View {
 
     // MARK: - 下部パネル
 
+    private var isClipping: Bool {
+        if case .working = clipPhase { true } else { false }
+    }
+
     private func bottomPanel(_ cuts: [TimeRange]) -> some View {
         VStack(spacing: 10) {
             if let selection = model.selection {
                 selectionBar(selection, cuts: cuts)
                 Divider()
+            }
+            if case .working(let progress) = clipPhase {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ProgressView(value: progress)
+                        Text("切り抜きを作成中… \(Int((progress * 100).rounded()))%")
+                            .font(.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                    Button("中止", role: .destructive) { cancelClipShare() }
+                        .font(.subheadline)
+                }
+                Divider()
+            } else if case .failed(let message) = clipPhase {
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             EditorPlayerBar(player: player, block: block.range, cuts: cuts)
             if let error = player.errorMessage {
@@ -234,6 +275,7 @@ struct EditorView: View {
         .padding(.horizontal)
         .padding(.vertical, 10)
         .background(.bar)
+        .background(ShareSheetPresenter(items: $shareFiles))
     }
 
     private func selectionBar(_ selection: EditorModel.Selection, cuts: [TimeRange]) -> some View {
@@ -261,10 +303,66 @@ struct EditorView: View {
                 action("試聴", "play.circle", disabled: fullyCut) { play(range) }
                 action("カット", "scissors", disabled: fullyCut) { addCut(range) }
                 action("カットを戻す", "arrow.uturn.backward.circle", disabled: !touchesCut) { removeCut(range) }
+                action("切り抜き共有", "square.and.arrow.up", disabled: fullyCut || isClipping) {
+                    startClipShare(range, cuts: cuts)
+                }
                 if let segment {
                     action("テキスト修正", "pencil", disabled: segment.state != .done) { editingSegment = segment }
                 }
             }
+        }
+    }
+
+    private func startClipShare(_ range: TimeRange, cuts: [TimeRange]) {
+        guard !isClipping, let recording = block.recording else { return }
+        player.pause()
+        let jobId = UUID()
+        clipJobId = jobId
+        clipPhase = .working(0)
+        let service = ExportService(context: modelContext)
+        let mp3Kbps = AppSettings.current(in: modelContext).mp3Kbps
+        IdleTimer.set(.export, active: true)
+        clipTask = Task {
+            defer {
+                if clipJobId == jobId {
+                    IdleTimer.set(.export, active: false)
+                    clipTask = nil
+                    clipJobId = nil
+                }
+            }
+            do {
+                let file = try await service.exportClip(
+                    recording: recording,
+                    block: block,
+                    range: range,
+                    cuts: cuts,
+                    mp3Kbps: mp3Kbps
+                ) { progress in
+                    if clipJobId == jobId, case .working = clipPhase {
+                        clipPhase = .working(progress)
+                    }
+                }
+                try Task.checkCancellation()
+                guard clipJobId == jobId else { return }
+                clipPhase = .idle
+                shareFiles = [file]
+            } catch is CancellationError {
+                if clipJobId == jobId { clipPhase = .idle }
+            } catch {
+                if clipJobId == jobId {
+                    clipPhase = .failed("切り抜きを書き出せませんでした：\(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private func cancelClipShare() {
+        clipTask?.cancel()
+        clipTask = nil
+        clipJobId = nil
+        IdleTimer.set(.export, active: false)
+        if case .working = clipPhase {
+            clipPhase = .idle
         }
     }
 
@@ -287,9 +385,12 @@ struct EditorView: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon).font(.title3)
-                Text(title).font(.caption2)
+                Text(title)
+                    .font(.caption2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .frame(minWidth: 64)
+            .frame(minWidth: 58)
             .padding(.vertical, 4)
         }
         .buttonStyle(.borderless)
@@ -496,5 +597,54 @@ private struct BlockInfoSheet: View {
         }
         .presentationDetents([.medium, .large])
         .onDisappear { try? modelContext.save() }
+    }
+}
+
+/// 指定されたファイルを共有シート（UIActivityViewController）で開き、閉じたら nil に戻す。
+/// iPad / Mac Catalyst ではこのビューの上端中央を基準にポップオーバーを出す
+private struct ShareSheetPresenter: UIViewControllerRepresentable {
+    @Binding var items: [URL]?
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        let vc = UIViewController()
+        vc.view.backgroundColor = .clear
+        vc.view.isUserInteractionEnabled = false
+        return vc
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        guard let items, !items.isEmpty else { return }
+        guard uiViewController.view.window != nil,
+              !context.coordinator.isPresenting,
+              uiViewController.presentedViewController == nil else { return }
+        context.coordinator.isPresenting = true
+        let coordinator = context.coordinator
+        coordinator.onDismiss = { self.items = nil }
+        let activity = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        if let popover = activity.popoverPresentationController {
+            popover.sourceView = uiViewController.view
+            popover.sourceRect = CGRect(
+                x: uiViewController.view.bounds.midX,
+                y: uiViewController.view.bounds.minY,
+                width: 1,
+                height: 1
+            )
+        }
+        activity.completionWithItemsHandler = { _, _, _, _ in
+            Task { @MainActor in
+                coordinator.isPresenting = false
+                coordinator.onDismiss?()
+                coordinator.onDismiss = nil
+            }
+        }
+        uiViewController.present(activity, animated: true)
+    }
+
+    @MainActor
+    final class Coordinator {
+        var isPresenting = false
+        var onDismiss: (() -> Void)?
     }
 }

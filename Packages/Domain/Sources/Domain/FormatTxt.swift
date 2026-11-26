@@ -137,3 +137,21 @@ public func exportFileName(recordedAt: Date, name: String, ext: String, taken: S
     }
     return candidate
 }
+
+/// 選択範囲を切り抜いて書き出すときの名前。`ブロック名_18m19s-34m35s` のようにブロック先頭からの時刻を付ける。
+/// `exportFileName` の60文字制限で時刻が切れないよう、ブロック名は40文字に収める
+public func clipExportName(blockTitle: String, range: TimeRange, blockStartMs: Int) -> String {
+    let start = max(0, range.startMs - blockStartMs)
+    let end = max(start, range.endMs - blockStartMs)
+    let span = "\(formatClipTime(ms: start))-\(formatClipTime(ms: end))"
+    let trimmed = blockTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return span }
+    return "\(String(trimmed.prefix(40)))_\(span)"
+}
+
+/// クリップのファイル名に使う時刻。65000 → "1m05s"、3725000 → "1h02m05s"
+private func formatClipTime(ms: Int) -> String {
+    let total = max(0, ms) / 1000
+    let h = total / 3600, m = total / 60 % 60, s = total % 60
+    return h > 0 ? String(format: "%dh%02dm%02ds", h, m, s) : String(format: "%dm%02ds", m, s)
+}

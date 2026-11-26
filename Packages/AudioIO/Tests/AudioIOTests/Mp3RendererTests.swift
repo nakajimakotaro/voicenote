@@ -91,6 +91,29 @@ struct Mp3RendererTests {
         await #expect(throws: CancellationError.self) { try await task.value }
         #expect(!FileManager.default.fileExists(atPath: out.path))
     }
+
+    @Test func reportsMonotonicProgress() async throws {
+        let wav = try makeSineWav(seconds: 2, sampleRate: 44_100, channels: 1)
+        let out = tmpMp3()
+        defer {
+            try? FileManager.default.removeItem(at: wav)
+            try? FileManager.default.removeItem(at: out)
+        }
+        let lock = NSLock()
+        nonisolated(unsafe) var events: [(Int, Int)] = []
+        let range = TimeRange(startMs: 0, endMs: 2_000)
+        _ = try await renderMp3(input: wav, ranges: [range], output: out,
+                                sampleRate: 44_100, kbps: 64, fadeMs: 30) { done, total in
+            lock.withLock { events.append((done, total)) }
+        }
+        let recorded = lock.withLock { events }
+        #expect(recorded.first?.0 == 0)
+        #expect(recorded.last?.0 == 2_000)
+        #expect(recorded.allSatisfy { $0.1 == 2_000 })
+        for (a, b) in zip(recorded, recorded.dropFirst()) {
+            #expect(a.0 <= b.0)
+        }
+    }
 }
 
 struct FadeTests {
