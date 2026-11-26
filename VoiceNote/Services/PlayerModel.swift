@@ -14,6 +14,8 @@ final class PlayerModel {
     private(set) var isPlaying = false
     /// 再生位置（元音声の先頭からのミリ秒）。止めている間はカーソルとして使う
     private(set) var positionMs = 0
+    /// 再生またはシークを一度でも行ったか（0:00 にドラッグしたときカーソルが消えないようにする）
+    private(set) var hasPosition = false
     private(set) var errorMessage: String?
     var rate: Float = 1.0 {
         didSet {
@@ -31,6 +33,10 @@ final class PlayerModel {
     /// ここまで来たら止める（区間の試聴）
     private var stopAtMs: Int?
     private var ticker: Task<Void, Never>?
+    /// タイムライン上の再生位置バーをドラッグ中か
+    private var scrubbing = false
+    /// ドラッグを始める前に再生中だったか
+    private var resumeAfterScrub = false
 
     /// 再生する音声ファイルを設定する。同じファイルなら何もしない
     func load(url: URL, title: String) {
@@ -39,6 +45,8 @@ final class PlayerModel {
         stop()
         self.url = url
         player = nil
+        positionMs = 0
+        hasPosition = false
     }
 
     func setCuts(_ cuts: [TimeRange]) {
@@ -47,12 +55,15 @@ final class PlayerModel {
 
     /// `ms` から再生する。`until` を指定するとそこで止まる
     func play(from ms: Int, until: Int? = nil) {
+        scrubbing = false
+        resumeAfterScrub = false
         guard let player = preparedPlayer() else { return }
         var start = max(0, ms)
         if let cut = activeCut(at: start) { start = cut.endMs }
         if let until, start >= until { return }
         player.currentTime = Double(start) / 1000
         positionMs = start
+        hasPosition = true
         stopAtMs = until
         player.rate = rate
         guard player.play() else {
@@ -71,8 +82,17 @@ final class PlayerModel {
     }
 
     func pause() {
+        let wasScrubbing = scrubbing
+        scrubbing = false
+        resumeAfterScrub = false
         player?.pause()
-        if let player { positionMs = Int(player.currentTime * 1000) }
+        if let player {
+            if wasScrubbing {
+                player.currentTime = Double(positionMs) / 1000
+            } else {
+                positionMs = Int(player.currentTime * 1000)
+            }
+        }
         isPlaying = false
         ticker?.cancel()
         ticker = nil
@@ -87,8 +107,50 @@ final class PlayerModel {
     func seek(to ms: Int) {
         let clamped = max(0, ms)
         positionMs = clamped
+        hasPosition = true
         player?.currentTime = Double(clamped) / 1000
         updateNowPlaying()
+    }
+
+    /// ドラッグ中に再生位置を動かす。再生中だった場合は一時的に音を止めて滑らかに追従させ、離したときに再開する
+    func scrub(to ms: Int, ended: Bool) {
+        let clamped = max(0, ms)
+        if !scrubbing {
+            if ended {
+                seek(to: clamped)
+                return
+            }
+            scrubbing = true
+            resumeAfterScrub = isPlaying
+            if isPlaying {
+                player?.pause()
+                ticker?.cancel()
+                ticker = nil
+            }
+        }
+        positionMs = clamped
+        hasPosition = true
+        guard ended else { return }
+        finishScrub(at: clamped)
+    }
+
+    /// ドラッグがシステムに中断されたときに状態を戻す
+    func cancelScrub() {
+        guard scrubbing else { return }
+        finishScrub(at: positionMs)
+    }
+
+    private func finishScrub(at ms: Int) {
+        scrubbing = false
+        let shouldResume = resumeAfterScrub
+        resumeAfterScrub = false
+        if shouldResume {
+            let until = stopAtMs.flatMap { $0 > ms ? $0 : nil }
+            isPlaying = false
+            play(from: ms, until: until)
+        } else {
+            seek(to: ms)
+        }
     }
 
     func stop() {

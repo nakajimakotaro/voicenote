@@ -26,7 +26,7 @@ extension BlockStatus {
 }
 
 /// 折り返しタイムラインの1行。波形、発話区間、ブロックの帯を重ねて描く。
-/// タップでその位置を知らせ、選択中のブロックの端はドラッグで動かせる
+/// タップでその位置を知らせ、再生位置のバーと選択中のブロックの端はドラッグで動かせる
 struct RowTimelineView: View {
     static let height: CGFloat = 52
 
@@ -57,7 +57,14 @@ struct RowTimelineView: View {
                     canvas
                         .contentShape(Rectangle())
                         .onTapGesture { location in onTap(ms(atX: location.x, width: geo.size.width)) }
-                    RowPlayhead(player: player, rowStartMs: rowStartMs, rowMs: rowMs)
+                    RowPlayhead(
+                        player: player,
+                        rowStartMs: rowStartMs,
+                        rowMs: rowMs,
+                        totalMs: totalMs,
+                        width: geo.size.width,
+                        spaceName: spaceName
+                    )
                     handles(width: geo.size.width)
                 }
                 .coordinateSpace(.named(spaceName))
@@ -169,22 +176,55 @@ struct RowTimelineView: View {
     }
 }
 
-/// 再生位置の線。位置だけを読むので、再生中に描き直されるのはこのビューだけ
+/// 再生位置の線。位置だけを読むので、再生中に描き直されるのはこのビューだけ。
+/// 行の中で左右にドラッグして再生位置を動かせる
 private struct RowPlayhead: View {
     let player: PlayerModel
     let rowStartMs: Int
     let rowMs: Int
+    let totalMs: Int
+    let width: CGFloat
+    let spaceName: String
+
+    @GestureState private var dragging = false
 
     var body: some View {
-        GeometryReader { geo in
-            let ms = player.positionMs
-            if (player.isPlaying || ms > 0), ms >= rowStartMs, ms < rowStartMs + rowMs {
-                Rectangle()
-                    .fill(.red)
-                    .frame(width: 2)
-                    .offset(x: CGFloat(ms - rowStartMs) / CGFloat(rowMs) * geo.size.width - 1)
-                    .allowsHitTesting(false)
+        let ms = player.positionMs
+        let inRow = ms >= rowStartMs && ms < rowStartMs + rowMs
+        let visible = (player.isPlaying || player.hasPosition || ms > 0) && inRow
+        ZStack(alignment: .topLeading) {
+            if visible || dragging {
+                let x = min(max(0, CGFloat(ms - rowStartMs) / CGFloat(rowMs) * width), width)
+                ZStack(alignment: .top) {
+                    Rectangle()
+                        .fill(.red)
+                        .frame(width: dragging ? 3 : 2, height: RowTimelineView.height)
+                    Circle()
+                        .fill(.red)
+                        .frame(width: dragging ? 10 : 8, height: dragging ? 10 : 8)
+                }
+                .frame(width: 36, height: RowTimelineView.height)
+                .contentShape(Rectangle())
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .named(spaceName))
+                        .updating($dragging) { _, state, _ in state = true }
+                        .onChanged { player.scrub(to: clampedMs(atX: $0.location.x), ended: false) }
+                        .onEnded { player.scrub(to: clampedMs(atX: $0.location.x), ended: true) }
+                )
+                .position(x: x, y: RowTimelineView.height / 2)
+                .accessibilityLabel("再生位置")
             }
         }
+        .onChange(of: dragging) { was, now in
+            if was, !now { player.cancelScrub() }
+        }
+    }
+
+    /// この行の範囲に収めた時刻。行の右端で次の行へ飛び出してジェスチャーが途切れないようにする
+    private func clampedMs(atX x: CGFloat) -> Int {
+        let ratio = min(max(0, x / max(1, width)), 1)
+        let raw = rowStartMs + Int(ratio * CGFloat(rowMs))
+        let upper = max(rowStartMs, min(totalMs, rowStartMs + rowMs - 1))
+        return min(max(rowStartMs, raw), upper)
     }
 }
