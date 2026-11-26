@@ -93,18 +93,30 @@ struct EditorView: View {
             WaveformView(
                 peaks: model.peaks,
                 peaksStartMs: model.peaksStartMs,
+                blockRange: block.range,
                 viewRange: model.viewRange,
                 cuts: cuts,
                 selection: model.selection?.range,
                 boundaries: segments.dropFirst().map(\.startMs),
                 player: player,
                 onTap: { tapWaveform(at: $0, cuts: cuts) },
-                onDrag: { model.drag(from: $0, to: $1, ended: $2) },
+                onPan: { model.pan(from: $0, to: $1, ended: $2) },
+                onDragEdge: { model.dragEdge($0, deltaFraction: $1, ended: $2) },
+                onCancelEdgeDrag: { model.cancelEdgeDrag() },
                 onMagnify: { model.magnify(by: $0, ended: $1) }
             )
             .frame(height: 110)
             HStack {
-                Toggle(isOn: $model.selectingRange) {
+                Toggle(isOn: Binding(
+                    get: { model.selection != nil },
+                    set: { on in
+                        if on {
+                            model.beginRangeSelection()
+                        } else {
+                            model.selection = nil
+                        }
+                    }
+                )) {
                     Label("範囲を選ぶ", systemImage: "selection.pin.in.out")
                 }
                 .toggleStyle(.button)
@@ -121,14 +133,12 @@ struct EditorView: View {
         .padding(.vertical, 10)
     }
 
-    /// タップした位置から再生する。カットの上なら、そのカットを選ぶ
+    /// タップした位置から再生する。選択中でなくカットの上なら、そのカットを選ぶ
     private func tapWaveform(at fraction: CGFloat, cuts: [TimeRange]) {
         let ms = model.ms(atFraction: fraction)
-        if model.selectingRange {
-            model.selection = nil
-            return
+        if model.selection == nil {
+            model.selection = cut(containing: ms, in: cuts).map { .range($0) }
         }
-        model.selection = cut(containing: ms, in: cuts).map { .range($0) }
         player.play(from: ms, until: block.endMs)
     }
 
@@ -233,12 +243,14 @@ struct EditorView: View {
         let touchesCut = cuts.contains { $0.overlaps(range) }
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(segment == nil ? "選択した範囲" : "選択した行")
-                    .font(.subheadline.bold())
-                Text(Self.lengthLabel(range.durationMs))
-                    .font(.subheadline)
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(segment == nil ? "選択した範囲" : "選択した行")
+                        .font(.subheadline.bold())
+                    Text("\(Self.preciseTime(range.startMs - block.startMs))〜\(Self.preciseTime(range.endMs - block.startMs))（\(Self.lengthLabel(range.durationMs))）")
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 Button("選択を解除", systemImage: "xmark.circle.fill") { model.selection = nil }
                     .labelStyle(.iconOnly)
@@ -254,6 +266,13 @@ struct EditorView: View {
                 }
             }
         }
+    }
+
+    /// 12400 → "0:12.4"、3725300 → "1:02:05.3"
+    private static func preciseTime(_ ms: Int) -> String {
+        let clamped = max(0, ms)
+        let tenths = (clamped / 100) % 10
+        return "\(Format.duration(ms: clamped)).\(tenths)"
     }
 
     /// 8400 → "8.4秒"、95000 → "1:35"

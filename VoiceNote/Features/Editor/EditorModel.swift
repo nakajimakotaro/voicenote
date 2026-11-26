@@ -10,7 +10,7 @@ import Observation
 final class EditorModel {
     enum Selection: Equatable {
         case segment(UUID, TimeRange)
-        /// 波形のドラッグや、タップしたカット
+        /// 波形のトリム枠や、タップしたカット
         case range(TimeRange)
 
         var range: TimeRange {
@@ -20,13 +20,18 @@ final class EditorModel {
         }
     }
 
+    enum SelectionEdge: Equatable {
+        case start
+        case end
+    }
+
     /// 波形で最も拡大したときに見える長さ
     static let minSpanMs = 5_000
+    /// 選択範囲の最小の長さ
+    static let minSelectionMs = 100
 
     let block: TimeRange
     var selection: Selection?
-    /// オンのあいだは、波形のドラッグで範囲を選ぶ。オフならドラッグで表示範囲を動かす
-    var selectingRange = false
     /// 再生位置にあるセグメント
     private(set) var currentSegmentId: UUID?
 
@@ -38,9 +43,10 @@ final class EditorModel {
     /// 波形に表示している範囲
     private(set) var viewStartMs: Int
     private(set) var viewSpanMs: Int
-    /// ドラッグとピンチを始めたときの表示範囲
+    /// ドラッグとピンチを始めたときの表示範囲・選択範囲
     private var dragOrigin: (startMs: Int, spanMs: Int)?
     private var magnifyOrigin: (startMs: Int, spanMs: Int)?
+    private var edgeDragOrigin: (range: TimeRange, spanMs: Int)?
 
     init(block: TimeRange) {
         self.block = block
@@ -82,7 +88,7 @@ final class EditorModel {
     func follow(_ ms: Int, isPlaying: Bool, segments: [TimeRange], ids: [UUID]) {
         let id = indexOfRange(containing: ms, in: segments).map { ids[$0] }
         if id != currentSegmentId { currentSegmentId = id }
-        if isPlaying, dragOrigin == nil, magnifyOrigin == nil, !viewRange.contains(ms), block.contains(ms) {
+        if isPlaying, dragOrigin == nil, magnifyOrigin == nil, edgeDragOrigin == nil, !viewRange.contains(ms), block.contains(ms) {
             setView(start: ms - viewSpanMs / 10, span: viewSpanMs)
         }
     }
@@ -95,18 +101,59 @@ final class EditorModel {
         return min(max(ms, block.startMs), block.endMs)
     }
 
-    /// ドラッグ。範囲選択中なら選択範囲を、そうでなければ表示範囲を動かす
-    func drag(from start: CGFloat, to current: CGFloat, ended: Bool) {
+    /// 現在の表示範囲の内側に初期の選択枠を作る
+    func beginRangeSelection() {
+        let visibleStart = max(block.startMs, viewStartMs)
+        let visibleEnd = min(block.endMs, viewRange.endMs)
+        let visibleSpan = max(0, visibleEnd - visibleStart)
+        guard visibleSpan > 0 else { return }
+        let minLen = min(Self.minSelectionMs, visibleSpan)
+        let inset = visibleSpan * 15 / 100
+        let start = visibleStart + inset
+        let end = visibleEnd - inset
+        let range = end - start >= minLen
+            ? TimeRange(startMs: start, endMs: end)
+            : TimeRange(startMs: visibleStart, endMs: visibleEnd)
+        selection = .range(range)
+    }
+
+    /// 選択範囲の左端または右端をドラッグで動かす。反対の端は固定されたまま動かない
+    func dragEdge(_ edge: SelectionEdge, deltaFraction: CGFloat, ended: Bool) {
+        guard let current = selection?.range else {
+            edgeDragOrigin = nil
+            return
+        }
+        let origin = edgeDragOrigin ?? (current, viewSpanMs)
+        edgeDragOrigin = ended ? nil : origin
+        let deltaMs = Int(deltaFraction * CGFloat(origin.spanMs))
+        let minLen = min(Self.minSelectionMs, block.durationMs)
+        let updated: TimeRange
+        switch edge {
+        case .start:
+            let lower = max(block.startMs, viewStartMs)
+            let upper = min(viewRange.endMs, max(block.startMs, origin.range.endMs - minLen))
+            let next = min(max(origin.range.startMs + deltaMs, min(lower, upper)), upper)
+            updated = TimeRange(startMs: next, endMs: origin.range.endMs)
+        case .end:
+            let lower = max(viewStartMs, min(block.endMs, origin.range.startMs + minLen))
+            let upper = min(block.endMs, viewRange.endMs)
+            let next = max(min(origin.range.endMs + deltaMs, max(lower, upper)), lower)
+            updated = TimeRange(startMs: origin.range.startMs, endMs: next)
+        }
+        selection = .range(updated)
+    }
+
+    /// 端のドラッグがシステムに中断されたときに状態を戻す
+    func cancelEdgeDrag() {
+        edgeDragOrigin = nil
+    }
+
+    /// ドラッグで波形の表示範囲を動かす
+    func pan(from start: CGFloat, to current: CGFloat, ended: Bool) {
         let origin = dragOrigin ?? (viewStartMs, viewSpanMs)
         dragOrigin = ended ? nil : origin
-        if selectingRange {
-            let a = originMs(atFraction: start, origin), b = originMs(atFraction: current, origin)
-            let range = TimeRange(startMs: min(a, b), endMs: max(a, b))
-            selection = range.durationMs > 0 ? .range(range) : nil
-        } else {
-            let delta = Int((start - current) * CGFloat(origin.spanMs))
-            setView(start: origin.startMs + delta, span: origin.spanMs)
-        }
+        let delta = Int((start - current) * CGFloat(origin.spanMs))
+        setView(start: origin.startMs + delta, span: origin.spanMs)
     }
 
     /// ピンチで拡大・縮小する。表示の中央を保つ
@@ -125,11 +172,6 @@ final class EditorModel {
     }
 
     var isZoomed: Bool { viewSpanMs < block.durationMs }
-
-    private func originMs(atFraction fraction: CGFloat, _ origin: (startMs: Int, spanMs: Int)) -> Int {
-        let ms = origin.startMs + Int(min(max(0, fraction), 1) * CGFloat(origin.spanMs))
-        return min(max(ms, block.startMs), block.endMs)
-    }
 
     private func setView(start: Int, span: Int) {
         let span = max(1, min(span, block.durationMs))
